@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRANSPARANSI KAS</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Header Clean -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-brand">
+                <div class="header-logo"><i class="fa-solid fa-building-columns"></i></div>
+                <div class="header-title">
+                    <h1>KAS WARGA KP CIWAREGOY</h1>
+                   <p>RT.002/RW.006</p>
+                    <p>Sistem Keuangan & Aset Warga</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Container Utama -->
+    <main class="main-container">
+        
+        <!-- Tab 1: Home / Dashboard -->
+        <section id="tab-home" class="tab-content active">
+            <!-- Ringkasan Saldo Utama -->
+            <div class="card card-balance-bank">
+                <div class="balance-top">
+                    <div class="balance-icon-box">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div>
+                        <span class="card-label-light">TOTAL SALDO KAS</span>
+                        <h2 id="total-balance">Rp 0</h2>
+                    </div>
+                </div>
+
+                <div class="balance-breakdown-bank">
+                    <div class="breakdown-item">
+                        <div class="arrow-badge in"><i class="fa-solid fa-arrow-up"></i></div>
+                        <div>
+                            <small>Total Masuk</small>
+                            <span id="total-income" class="text-income">Rp 0</span>
+                        </div>
+                    </div>
+                    <div class="divider-v"></div>
+                    <div class="breakdown-item">
+                        <div class="arrow-badge out"><i class="fa-solid fa-arrow-down"></i></div>
+                        <div>
+                            <small>Total Keluar</small>
+                            <span id="total-expense" class="text-expense">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Papan Pengumuman -->
+            <div class="card card-section">
+                <div class="section-header space-between">
+                    <div class="flex-align gap-8">
+                        <div class="header-icon bg-orange"><i class="fa-solid fa-bullhorn"></i></div>
+                        <h3>Papan Pengumuman</h3>
+                    </div>
+                </div>
+                <div id="announcement-list" class="list-container">
+                    <div class="loading-state">Memuat pengumuman...</div>
+                </div>
+            </div>
+
+            <!-- Informasi Pembayaran & Wilayah -->
+            <div class="card card-section">
+                <div class="section-header">
+                    <div class="header-icon bg-blue"><i class="fa-solid fa-wallet"></i></div>
+                    <h3>Pembayaran Iuran & Sumbangan</h3>
+                </div>
+                <div class="info-box-bank">
+                    <div class="dana-box">
+                        <div class="flex-align gap-12">
+                            <div class="dana-logo"><i class="fa-solid fa-mobile-screen-button"></i> DANA</div>
+                            <div>
+                                <strong>E-Wallet</strong>
+                                <p id="dana-number">083135091515</p>
+                                <small>a.n. Iin Suhada</small>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-blue" id="btn-copy-dana">
+                            <i class="fa-regular fa-copy"></i> Salin
+                        </button>
+                    </div>
+                    <hr class="divider">
+                    <div class="address-box">
+                        <p><i class="fa-solid fa-location-dot text-danger"></i> <strong>WILAYAH:</strong> RT.02/RW.06 Ds.Karyasari Kec.Banyuresmi Kab.Garut</p>
+                        <p><i class="fa-solid fa-phone text-success"></i> <strong>Kontak Admin:</strong> (Chat) 0812-2474-9933</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 2: Detail Informasi (Iuran Warga) -->
+        <section id="tab-dues" class="tab-content">
+            <div class="card card-section">
+                <div class="section-header space-between">
+                    <div class="flex-align gap-8">
+                        <div class="header-icon bg-blue"><i class="fa-solid fa-users"></i></div>
+                        <h3>Detail Informasi</h3>
+                    </div>
+                    <button class="btn btn-sm btn-outline-blue" id="btn-reset-dues-filter">
+                        <i class="fa-solid fa-arrows-rotate"></i> Reset
+                    </button>
+                </div>
+                
+                <!-- Filter Date Range -->
+                <div class="mutation-filter-card">
+                    <div class="filter-date-inputs">
+                        <div class="date-input-field" id="trigger-dues-filter-start">
+                            <small>Dari Tanggal</small>
+                            <div class="date-display"><i class="fa-regular fa-calendar"></i> <span id="text-dues-filter-start">Semua Tanggal</span></div>
+                        </div>
+                        <div class="date-sep"><i class="fa-solid fa-arrow-right-long"></i></div>
+                        <div class="date-input-field" id="trigger-dues-filter-end">
+                            <small>Sampai Tanggal</small>
+                            <div class="date-display"><i class="fa-regular fa-calendar"></i> <span id="text-dues-filter-end">Semua Tanggal</span></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-block style-btn-search" id="btn-search-dues">
+                        <i class="fa-solid fa-magnifying-glass"></i> Tampilkan Data
+                    </button>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" id="search-resident" class="form-control" placeholder="Cari No Rumah / Nama...">
+                </div>
+
+                <div id="dues-list" class="resident-grid">
+                    <div class="loading-state">Memuat data iuran...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 3: Mutasi Transaksi -->
+        <section id="tab-mutation" class="tab-content">
+            <div class="card card-section">
+                <div class="section-header space-between">
+                    <div class="flex-align gap-8">
+                        <div class="header-icon bg-purple"><i class="fa-solid fa-receipt"></i></div>
+                        <h3>Mutasi Transaksi</h3>
+                    </div>
+                    <button class="btn btn-sm btn-outline-blue" id="btn-reset-mutation-filter">
+                        <i class="fa-solid fa-arrows-rotate"></i> Reset
+                    </button>
+                </div>
+
+                <!-- Filter Tanggal Mutasi -->
+                <div class="mutation-filter-card">
+                    <div class="filter-date-inputs">
+                        <div class="date-input-field" id="trigger-mutation-start">
+                            <small>Dari Tanggal</small>
+                            <div class="date-display"><i class="fa-regular fa-calendar"></i> <span id="text-mutation-start">Semua Tanggal</span></div>
+                        </div>
+                        <div class="date-sep"><i class="fa-solid fa-arrow-right-long"></i></div>
+                        <div class="date-input-field" id="trigger-mutation-end">
+                            <small>Sampai Tanggal</small>
+                            <div class="date-display"><i class="fa-regular fa-calendar"></i> <span id="text-mutation-end">Semua Tanggal</span></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-block style-btn-search" id="btn-search-mutation">
+                        <i class="fa-solid fa-magnifying-glass"></i> Tampilkan Data
+                    </button>
+                </div>
+
+                <div id="mutation-list" class="list-container">
+                    <div class="loading-state">Memuat data mutasi...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 4: Barang Aset Kampung & Penggunaan -->
+        <section id="tab-inventory" class="tab-content">
+            <div class="card card-section">
+                <div class="section-header">
+                    <div class="header-icon bg-orange"><i class="fa-solid fa-boxes-stacked"></i></div>
+                    <h3>Daftar Barang Aset Warga</h3>
+                </div>
+                <div id="inventory-list" class="list-container">
+                    <div class="loading-state">Memuat data barang...</div>
+                </div>
+            </div>
+
+            <div class="card card-section">
+                <div class="section-header">
+                    <div class="header-icon bg-blue"><i class="fa-solid fa-handshake"></i></div>
+                    <h3>Status Pinjam & Sewa Barang</h3>
+                </div>
+                <div id="usage-list" class="list-container">
+                    <div class="loading-state">Memuat status penggunaan...</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Floating Action Button Admin -->
+    <button id="fab-admin" class="fab">
+        <i class="fa-solid fa-gear"></i>
+        <span>ADMIN</span>
+    </button>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-tab="tab-home">
+            <i class="fa-solid fa-house"></i>
+            <span>Beranda</span>
+        </button>
+        <button class="nav-item" data-tab="tab-dues">
+            <i class="fa-solid fa-hand-holding-dollar"></i>
+            <span>Iuran</span>
+        </button>
+        <button class="nav-item" data-tab="tab-mutation">
+            <i class="fa-solid fa-list-check"></i>
+            <span>Mutasi</span>
+        </button>
+        <button class="nav-item" data-tab="tab-inventory">
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <span>Barang</span>
+        </button>
+    </nav>
+
+    <!-- CUSTOM MODAL CALENDAR / DATE PICKER -->
+    <div id="modal-calendar" class="modal">
+        <div class="modal-content modal-calendar-box">
+            <div class="calendar-header-blue">
+                <button class="icon-btn-light" id="btn-cal-back"><i class="fa-solid fa-arrow-left"></i></button>
+                <h4 id="calendar-title">Pilih Tanggal</h4>
+            </div>
+            
+            <div class="calendar-nav">
+                <button id="btn-cal-prev-month" class="cal-nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                <span id="cal-month-year-label">Juli 2026</span>
+                <button id="btn-cal-next-month" class="cal-nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+
+            <div class="calendar-body">
+                <div class="calendar-weekdays">
+                    <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+                </div>
+                <div class="calendar-days-grid" id="calendar-days-container"></div>
+            </div>
+
+            <div class="calendar-footer">
+                <button type="button" class="btn btn-primary btn-block btn-lg" id="btn-cal-submit">Pilih</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM MODAL DIALOGS -->
+    <div id="modal-alert" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h4 id="alert-title">Informasi</h4>
+            </div>
+            <div class="modal-body">
+                <p id="alert-message">Pesan...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btn-alert-close">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-confirm" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h4 id="confirm-title">Konfirmasi Action</h4>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message">Apakah Anda yakin?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-confirm-cancel">Batal</button>
+                <button class="btn btn-danger" id="btn-confirm-ok">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pengembalian Barang -->
+    <div id="modal-return" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h4>Pengembalian Barang</h4>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="form-return-item">
+                <input type="hidden" id="return-usage-id">
+                <div class="modal-body">
+                    <p id="return-item-info" style="font-size:13px; margin-bottom:12px; font-weight:600;"></p>
+                    <div class="form-group">
+                        <label>Tanggal & Jam Dikembalikan</label>
+                        <div class="custom-date-trigger" id="trigger-return-date">
+                            <i class="fa-regular fa-calendar"></i>
+                            <span id="text-return-date">Pilih Tanggal</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">OK, Kembalikan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-login" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h4>Akses Panel Admin</h4>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="form-login">
+                <div class="modal-body">
+                    <label>Masukkan PIN Admin</label>
+                    <input type="password" id="login-pin" class="form-control" maxlength="4" placeholder="1234 atau 0000" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary btn-block">Login Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Panel Admin Fullscreen -->
+    <div id="modal-admin" class="modal modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4><i class="fa-solid fa-gauge-high"></i> Panel Admin KAS RT/RW</h4>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button id="btn-logout" class="btn btn-sm btn-danger">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                    <button class="close-modal">&times;</button>
+                </div>
+            </div>
+            
+            <div class="admin-subtabs">
+                <button class="subtab-btn active" data-subtab="sub-dues">Input Iuran</button>
+                <button class="subtab-btn" data-subtab="sub-bulk">Import Bulk</button>
+                <button class="subtab-btn" data-subtab="sub-income">Pemasukan Lain</button>
+                <button class="subtab-btn" data-subtab="sub-expense">Pengeluaran</button>
+                <button class="subtab-btn" data-subtab="sub-inventory">Aset Barang</button>
+                <button class="subtab-btn" data-subtab="sub-usage">Sewa / Pinjam</button>
+                <button class="subtab-btn" data-subtab="sub-announcement">Pengumuman</button>
+                <button class="subtab-btn" data-subtab="sub-resident">Tambah Warga</button>
+                <button class="subtab-btn" data-subtab="sub-manage">Kelola Data</button>
+            </div>
+
+            <div class="modal-body">
+                <div id="sub-dues" class="subtab-content active">
+                    <form id="form-single-dues">
+                        <div class="form-group">
+                            <label>No Rumah Warga</label>
+                            <select id="dues-house-number" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Nominal (Rp) - <i>Isi 0 jika tidak bayar</i></label>
+                            <input type="number" id="dues-amount" class="form-control" placeholder="10000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tanggal Transaksi</label>
+                            <div class="custom-date-trigger" id="trigger-dues-date">
+                                <i class="fa-regular fa-calendar"></i>
+                                <span id="text-dues-date">Pilih Tanggal</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Simpan Iuran</button>
+                    </form>
+                </div>
+
+                <div id="sub-bulk" class="subtab-content">
+                    <form id="form-bulk-dues">
+                        <p class="help-text">Format Teks: <code>NoRumah [TAB/SPASI] Nominal</code> per baris.<br>Contoh:<br>A1 10000<br>A2 0<br>A3 15000</p>
+                        <div class="form-group">
+                            <label>Paste Data Bulk Excel</label>
+                            <textarea id="bulk-text" class="form-control" rows="5" placeholder="A1 10000" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Tanggal Transaksi Bersama</label>
+                            <div class="custom-date-trigger" id="trigger-bulk-date">
+                                <i class="fa-regular fa-calendar"></i>
+                                <span id="text-bulk-date">Pilih Tanggal</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Proses Import Bulk</button>
+                    </form>
+                </div>
+
+                <div id="sub-income" class="subtab-content">
+                    <form id="form-other-income">
+                        <div class="form-group">
+                            <label>Judul / Sumber Pemasukan</label>
+                            <input type="text" id="income-title" class="form-control" placeholder="Donasi Acara 17an" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nominal (Rp)</label>
+                            <input type="number" id="income-amount" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tanggal Transaksi</label>
+                            <div class="custom-date-trigger" id="trigger-income-date">
+                                <i class="fa-regular fa-calendar"></i>
+                                <span id="text-income-date">Pilih Tanggal</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Simpan Pemasukan</button>
+                    </form>
+                </div>
+
+                <div id="sub-expense" class="subtab-content">
+                    <form id="form-expense">
+                        <div class="form-group">
+                            <label>Kategori</label>
+                            <select id="expense-category" class="form-control" required>
+                                <option value="Kebersihan">Kebersihan</option>
+                                <option value="Keamanan">Keamanan</option>
+                                <option value="Sosial">Sosial</option>
+                                <option value="Infrastruktur">Infrastruktur</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Judul Pengeluaran</label>
+                            <input type="text" id="expense-title" class="form-control" placeholder="Beli Lampu Jalan" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nominal (Rp)</label>
+                            <input type="number" id="expense-amount" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>PIC / Penanggung Jawab</label>
+                            <input type="text" id="expense-pic" class="form-control" placeholder="Pak Sekuriti / Pak RT" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Link Nota (URL Image/Drive)</label>
+                            <input type="url" id="expense-receipt" class="form-control" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label>Link Bukti Barang (URL Image/Drive)</label>
+                            <input type="url" id="expense-proof" class="form-control" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label>Tanggal Transaksi</label>
+                            <div class="custom-date-trigger" id="trigger-expense-date">
+                                <i class="fa-regular fa-calendar"></i>
+                                <span id="text-expense-date">Pilih Tanggal</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Simpan Pengeluaran</button>
+                    </form>
+                </div>
+
+                <div id="sub-inventory" class="subtab-content">
+                    <form id="form-inventory">
+                        <div class="form-group">
+                            <label>Nama Barang</label>
+                            <input type="text" id="inv-name" class="form-control" placeholder="Tenda Terpal 4x6" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Jumlah Unit Total</label>
+                            <input type="number" id="inv-qty" class="form-control" placeholder="2" required min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Harga Beli Per Unit (Rp)</label>
+                            <input type="number" id="inv-price" class="form-control" placeholder="250000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Status Ketersediaan</label>
+                            <select id="inv-status" class="form-control" required>
+                                <option value="Tersedia">Tersedia</option>
+                                <option value="Dipinjam">Dipinjam</option>
+                                <option value="Disewa">Disewa</option>
+                                <option value="Rusak">Rusak</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Simpan Barang Aset</button>
+                    </form>
+                </div>
+
+                <div id="sub-usage" class="subtab-content">
+                    <form id="form-usage">
+                        <div class="form-group">
+                            <label>Nama Pengguna / Peminjam</label>
+                            <input type="text" id="use-user-name" class="form-control" placeholder="Bpk. Ahmad (Rumah A03)" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Pilih Jenis Barang</label>
+                            <select id="use-inventory-id" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Jumlah Dipinjam/Disewa</label>
+                            <input type="number" id="use-qty" class="form-control" value="1" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Status Penggunaan</label>
+                            <select id="use-type" class="form-control" required>
+                                <option value="Disewa">Disewa</option>
+                                <option value="Dipinjam">Dipinjam</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Tanggal Pinjam / Sewa</label>
+                            <div class="custom-date-trigger" id="trigger-use-date">
+                                <i class="fa-regular fa-calendar"></i>
+                                <span id="text-use-date">Pilih Tanggal</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Kas Diterima (Rp) - <i>Isi 0 jika gratis/pinjam</i></label>
+                            <input type="number" id="use-income" class="form-control" placeholder="50000" value="0" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Simpan Transaksi Penggunaan</button>
+                    </form>
+                </div>
+
+                <div id="sub-announcement" class="subtab-content">
+                    <form id="form-announcement">
+                        <div class="form-group">
+                            <label>Judul Pengumuman</label>
+                            <input type="text" id="ann-title" class="form-control" placeholder="Kerja Bakti Minggu Ini" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Isi Pengumuman</label>
+                            <textarea id="ann-content" class="form-control" rows="4" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Posting Pengumuman</button>
+                    </form>
+                </div>
+
+                <div id="sub-resident" class="subtab-content">
+                    <form id="form-resident">
+                        <div class="form-group">
+                            <label>Nomor Rumah</label>
+                            <input type="text" id="res-house" class="form-control" placeholder="A1 / B05" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nama Lengkap Warga</label>
+                            <input type="text" id="res-name" class="form-control" placeholder="Budi Santoso" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Tambah Data Warga</button>
+                    </form>
+                </div>
+
+                <div id="sub-manage" class="subtab-content">
+                    <div class="form-group">
+                        <label>Pilih Jenis Data Untuk Dikelola</label>
+                        <select id="manage-type" class="form-control">
+                            <option value="dues_payments">Data Iuran</option>
+                            <option value="expenses">Data Pengeluaran</option>
+                            <option value="other_incomes">Data Pemasukan Lain</option>
+                            <option value="inventories">Data Barang Aset</option>
+                            <option value="item_usages">Data Pinjam / Sewa Barang</option>
+                            <option value="announcements">Papan Pengumuman</option>
+                            <option value="residents">Master Data Warga</option>
+                        </select>
+                    </div>
+                    <div id="manage-list" class="list-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Generic -->
+    <div id="modal-edit" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h4 id="edit-title">Edit Data</h4>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="form-edit-generic">
+                <input type="hidden" id="edit-id">
+                <input type="hidden" id="edit-table">
+                <div class="modal-body" id="edit-fields"></div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary btn-block">Update Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
