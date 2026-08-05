@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRANSPARANSI KAS</title>
+    <title>Transparansi KAS RT/RW</title>
     <!-- Google Fonts & FontAwesome -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -20,8 +20,8 @@
                 <div class="header-logo"><i class="fa-solid fa-building-columns"></i></div>
                 <div class="header-title">
                     <h1>KAS WARGA KP CIWAREGOY</h1>
-                   <p>RT.002/RW.006</p>
-                    <p>Sistem Keuangan & Aset Warga</p>
+                    <p>RT.002/RW.006</p>
+                  <p>• Sistem Keuangan & Aset Warga</p>
                 </div>
             </div>
         </div>
@@ -83,20 +83,39 @@
                     <h3>Pembayaran Iuran & Sumbangan</h3>
                 </div>
                 <div class="info-box-bank">
+                    <!-- BOX QRIS -->
+                    <div class="qris-box">
+                        <div class="flex-align gap-12">
+                            <div class="qris-logo"><i class="fa-solid fa-qrcode"></i> QRIS</div>
+                            <div>
+                                <strong>QRIS Kas Warga</strong>
+                                <small style="display:block;">Bisa pakai GoPay, OVO, ShopeePay, BCA, dll.</small>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="openModal('modal-qris')">
+                            <i class="fa-solid fa-expand"></i> Lihat QRIS
+                        </button>
+                    </div>
+
+                    <hr class="divider">
+
+                    <!-- BOX DANA -->
                     <div class="dana-box">
                         <div class="flex-align gap-12">
                             <div class="dana-logo"><i class="fa-solid fa-mobile-screen-button"></i> DANA</div>
                             <div>
-                                <strong>E-Wallet</strong>
+                                <strong>E-Wallet DANA</strong>
                                 <p id="dana-number">083135091515</p>
-                                <small>a.n. Iin Suhada</small>
+                                <small>A.N./ IIN SUHADA</small>
                             </div>
                         </div>
                         <button class="btn btn-sm btn-outline-blue" id="btn-copy-dana">
                             <i class="fa-regular fa-copy"></i> Salin
                         </button>
                     </div>
+
                     <hr class="divider">
+
                     <div class="address-box">
                         <p><i class="fa-solid fa-location-dot text-danger"></i> <strong>WILAYAH:</strong> RT.02/RW.06 Ds.Karyasari Kec.Banyuresmi Kab.Garut</p>
                         <p><i class="fa-solid fa-phone text-success"></i> <strong>Kontak Admin:</strong> (Chat) 0812-2474-9933</p>
@@ -118,17 +137,17 @@
                     </button>
                 </div>
                 
-                <!-- Filter Date Range -->
+                <!-- Filter Date Range Trigger Custom -->
                 <div class="mutation-filter-card">
-                    <div class="filter-date-inputs">
-                        <div class="date-input-field" id="trigger-dues-filter-start">
+                    <div class="filter-date-inputs" onclick="openCalendarModal('dues')">
+                        <div class="date-input-field">
                             <small>Dari Tanggal</small>
-                            <div class="date-display"><i class="fa-regular fa-calendar"></i> <span id="text-dues-filter-start">Semua Tanggal</span></div>
+                            <span id="display-dues-start" class="date-trigger-text">Pilih Tanggal</span>
                         </div>
                         <div class="date-sep"><i class="fa-solid fa-arrow-right-long"></i></div>
-                        <div class="date-input-field" id="trigger-dues-filter-end">
+                        <div class="date-input-field">
                             <small>Sampai Tanggal</small>
-                            <div class="date-display"><i class="fa-regular fa-calendar"></i> <span id="text-dues-filter-end">Semua Tanggal</span></div>
+                            <span id="display-dues-end" class="date-trigger-text">Pilih Tanggal</span>
                         </div>
                     </div>
                     <button class="btn btn-primary btn-block style-btn-search" id="btn-search-dues">
@@ -159,17 +178,17 @@
                     </button>
                 </div>
 
-                <!-- Filter Tanggal Mutasi -->
+                <!-- Filter Tanggal Mutasi Trigger Custom -->
                 <div class="mutation-filter-card">
-                    <div class="filter-date-inputs">
-                        <div class="date-input-field" id="trigger-mutation-start">
+                    <div class="filter-date-inputs" onclick="openCalendarModal('mutation')">
+                        <div class="date-input-field">
                             <small>Dari Tanggal</small>
-                            <div class="date-display"><i class="fa-regular fa-calendar"></i> <span id="text-mutation-start">Semua Tanggal</span></div>
+                            <span id="display-mutation-start" class="date-trigger-text">Pilih Tanggal</span>
                         </div>
                         <div class="date-sep"><i class="fa-solid fa-arrow-right-long"></i></div>
-                        <div class="date-input-field" id="trigger-mutation-end">
+                        <div class="date-input-field">
                             <small>Sampai Tanggal</small>
-                            <div class="date-display"><i class="fa-regular fa-calendar"></i> <span id="text-mutation-end">Semua Tanggal</span></div>
+                            <span id="display-mutation-end" class="date-trigger-text">Pilih Tanggal</span>
                         </div>
                     </div>
                     <button class="btn btn-primary btn-block style-btn-search" id="btn-search-mutation">
@@ -234,29 +253,54 @@
         </button>
     </nav>
 
-    <!-- CUSTOM MODAL CALENDAR / DATE PICKER -->
-    <div id="modal-calendar" class="modal">
-        <div class="modal-content modal-calendar-box">
-            <div class="calendar-header-blue">
-                <button class="icon-btn-light" id="btn-cal-back"><i class="fa-solid fa-arrow-left"></i></button>
-                <h4 id="calendar-title">Pilih Tanggal</h4>
+    <!-- MODAL CUSTOM KALENDER CANTIK ALA M-BANKING -->
+    <div id="modal-calendar" class="modal modal-fullscreen">
+        <div class="modal-content calendar-modal-content">
+            <div class="calendar-blue-header">
+                <button class="cal-back-btn" onclick="closeModal('modal-calendar')">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <h3>Pilih Tanggal</h3>
             </div>
             
-            <div class="calendar-nav">
-                <button id="btn-cal-prev-month" class="cal-nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
-                <span id="cal-month-year-label">Juli 2026</span>
-                <button id="btn-cal-next-month" class="cal-nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
-            </div>
+            <div class="calendar-body-wrapper">
+                <div class="calendar-month-nav">
+                    <button id="cal-prev-month" class="cal-nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span id="cal-month-year-text">Agustus 2026</span>
+                    <button id="cal-next-month" class="cal-nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
 
-            <div class="calendar-body">
-                <div class="calendar-weekdays">
+                <div class="calendar-days-header">
                     <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
                 </div>
-                <div class="calendar-days-grid" id="calendar-days-container"></div>
+
+                <div id="calendar-grid" class="calendar-grid">
+                    <!-- Dynamic Days Injected by JS -->
+                </div>
             </div>
 
             <div class="calendar-footer">
-                <button type="button" class="btn btn-primary btn-block btn-lg" id="btn-cal-submit">Pilih</button>
+                <button class="btn btn-primary btn-block btn-lg" id="btn-apply-calendar">Pilih</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DISPLAY QRIS -->
+    <div id="modal-qris" class="modal">
+        <div class="modal-content modal-sm" style="text-align: center;">
+            <div class="modal-header">
+                <h4>QRIS Pembayaran Kas</h4>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Scan menggunakan m-banking atau E-Wallet pilihan Anda</p>
+                <div class="qris-img-wrapper">
+                    <img src="qris-kas.jpg" alt="QRIS KAS WARGA" class="qris-image">
+                </div>
+                <small style="display:block; margin-top:10px; font-weight:700; color:#1e40af;">a.n. Masjid Al-Ikhwan</small>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal btn-block">Tutup</button>
             </div>
         </div>
     </div>
@@ -303,10 +347,11 @@
                 <div class="modal-body">
                     <p id="return-item-info" style="font-size:13px; margin-bottom:12px; font-weight:600;"></p>
                     <div class="form-group">
-                        <label>Tanggal & Jam Dikembalikan</label>
-                        <div class="custom-date-trigger" id="trigger-return-date">
-                            <i class="fa-regular fa-calendar"></i>
-                            <span id="text-return-date">Pilih Tanggal</span>
+                        <label>Tanggal Dikembalikan</label>
+                        <div class="custom-date-trigger-box" onclick="openCalendarModal('form-return-date')">
+                            <i class="fa-regular fa-calendar-days text-primary"></i>
+                            <span id="display-return-date" class="date-trigger-text">Pilih Tanggal</span>
+                            <input type="hidden" id="input-return-date">
                         </div>
                     </div>
                 </div>
@@ -318,6 +363,7 @@
         </div>
     </div>
 
+    <!-- Modal Login -->
     <div id="modal-login" class="modal">
         <div class="modal-content modal-sm">
             <div class="modal-header">
@@ -327,7 +373,7 @@
             <form id="form-login">
                 <div class="modal-body">
                     <label>Masukkan PIN Admin</label>
-                    <input type="password" id="login-pin" class="form-control" maxlength="4" placeholder="1234 atau 0000" required>
+                    <input type="password" id="login-pin" class="form-control" maxlength="4" placeholder="" required>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary btn-block">Login Admin</button>
@@ -362,6 +408,7 @@
             </div>
 
             <div class="modal-body">
+                <!-- FORM INPUT IURAN -->
                 <div id="sub-dues" class="subtab-content active">
                     <form id="form-single-dues">
                         <div class="form-group">
@@ -374,15 +421,17 @@
                         </div>
                         <div class="form-group">
                             <label>Tanggal Transaksi</label>
-                            <div class="custom-date-trigger" id="trigger-dues-date">
-                                <i class="fa-regular fa-calendar"></i>
-                                <span id="text-dues-date">Pilih Tanggal</span>
+                            <div class="custom-date-trigger-box" onclick="openCalendarModal('form-dues-date')">
+                                <i class="fa-regular fa-calendar-days text-primary"></i>
+                                <span id="display-dues-date" class="date-trigger-text">Pilih Tanggal</span>
+                                <input type="hidden" id="input-dues-date">
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Simpan Iuran</button>
                     </form>
                 </div>
 
+                <!-- FORM IMPORT BULK -->
                 <div id="sub-bulk" class="subtab-content">
                     <form id="form-bulk-dues">
                         <p class="help-text">Format Teks: <code>NoRumah [TAB/SPASI] Nominal</code> per baris.<br>Contoh:<br>A1 10000<br>A2 0<br>A3 15000</p>
@@ -392,15 +441,17 @@
                         </div>
                         <div class="form-group">
                             <label>Tanggal Transaksi Bersama</label>
-                            <div class="custom-date-trigger" id="trigger-bulk-date">
-                                <i class="fa-regular fa-calendar"></i>
-                                <span id="text-bulk-date">Pilih Tanggal</span>
+                            <div class="custom-date-trigger-box" onclick="openCalendarModal('form-bulk-date')">
+                                <i class="fa-regular fa-calendar-days text-primary"></i>
+                                <span id="display-bulk-date" class="date-trigger-text">Pilih Tanggal</span>
+                                <input type="hidden" id="input-bulk-date">
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Proses Import Bulk</button>
                     </form>
                 </div>
 
+                <!-- FORM PEMASUKAN LAIN -->
                 <div id="sub-income" class="subtab-content">
                     <form id="form-other-income">
                         <div class="form-group">
@@ -413,15 +464,17 @@
                         </div>
                         <div class="form-group">
                             <label>Tanggal Transaksi</label>
-                            <div class="custom-date-trigger" id="trigger-income-date">
-                                <i class="fa-regular fa-calendar"></i>
-                                <span id="text-income-date">Pilih Tanggal</span>
+                            <div class="custom-date-trigger-box" onclick="openCalendarModal('form-income-date')">
+                                <i class="fa-regular fa-calendar-days text-primary"></i>
+                                <span id="display-income-date" class="date-trigger-text">Pilih Tanggal</span>
+                                <input type="hidden" id="input-income-date">
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Simpan Pemasukan</button>
                     </form>
                 </div>
 
+                <!-- FORM PENGELUARAN -->
                 <div id="sub-expense" class="subtab-content">
                     <form id="form-expense">
                         <div class="form-group">
@@ -456,9 +509,10 @@
                         </div>
                         <div class="form-group">
                             <label>Tanggal Transaksi</label>
-                            <div class="custom-date-trigger" id="trigger-expense-date">
-                                <i class="fa-regular fa-calendar"></i>
-                                <span id="text-expense-date">Pilih Tanggal</span>
+                            <div class="custom-date-trigger-box" onclick="openCalendarModal('form-expense-date')">
+                                <i class="fa-regular fa-calendar-days text-primary"></i>
+                                <span id="display-expense-date" class="date-trigger-text">Pilih Tanggal</span>
+                                <input type="hidden" id="input-expense-date">
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Simpan Pengeluaran</button>
@@ -492,6 +546,7 @@
                     </form>
                 </div>
 
+                <!-- FORM SEWA/PINJAM -->
                 <div id="sub-usage" class="subtab-content">
                     <form id="form-usage">
                         <div class="form-group">
@@ -515,9 +570,10 @@
                         </div>
                         <div class="form-group">
                             <label>Tanggal Pinjam / Sewa</label>
-                            <div class="custom-date-trigger" id="trigger-use-date">
-                                <i class="fa-regular fa-calendar"></i>
-                                <span id="text-use-date">Pilih Tanggal</span>
+                            <div class="custom-date-trigger-box" onclick="openCalendarModal('form-use-date')">
+                                <i class="fa-regular fa-calendar-days text-primary"></i>
+                                <span id="display-use-date" class="date-trigger-text">Pilih Tanggal</span>
+                                <input type="hidden" id="input-use-date">
                             </div>
                         </div>
                         <div class="form-group">

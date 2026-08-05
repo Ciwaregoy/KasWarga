@@ -14,60 +14,58 @@ let state = {
     announcements: [],
     inventories: [],
     itemUsages: [],
-    confirmCallback: null,
-    
-    // CUSTOM CALENDAR STATE
-    calCurrentDate: new Date(),
-    calSelectedDate: new Date(),
-    calTargetInputId: null,
-    
-    // MUTATION DATE FILTER (Default null = Semua Tanggal)
-    mutationStartDate: null,
-    mutationEndDate: null,
-
-    // DUES DATE FILTER (Default null = Semua Tanggal)
-    duesFilterStartDate: null,
-    duesFilterEndDate: null
+    confirmCallback: null
 };
+
+// CALENDAR STATE
+let calState = {
+    targetModule: 'dues', // 'dues', 'mutation', 'form-dues-date', 'form-bulk-date', 'form-income-date', 'form-expense-date', 'form-use-date', 'form-return-date'
+    currentYear: 2026,
+    currentMonth: 7, // 7 = Agustus 2026
+    startDate: null,
+    endDate: null,
+    
+    duesStart: '',
+    duesEnd: '',
+    mutationStart: '',
+    mutationEnd: ''
+};
+
+const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 // DOM CONTENT LOADED
 document.addEventListener("DOMContentLoaded", () => {
     initApp();
     setupEventListeners();
+    setupCalendarListeners();
 });
 
 async function initApp() {
     if (localStorage.getItem("admin_session") === "true") {
         state.isAdmin = true;
     }
-    initDefaultDates();
+    initTodayDates();
     await loadAllData();
 }
 
-function initDefaultDates() {
-    const today = new Date();
-    setTriggerDate('dues-date', today);
-    setTriggerDate('bulk-date', today);
-    setTriggerDate('income-date', today);
-    setTriggerDate('expense-date', today);
-    setTriggerDate('use-date', today);
-    setTriggerDate('return-date', today);
+function initTodayDates() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const formDateIds = [
+        'input-dues-date', 'input-bulk-date', 'input-income-date', 
+        'input-expense-date', 'input-use-date', 'input-return-date'
+    ];
+    
+    formDateIds.forEach(id => {
+        const inputEl = document.getElementById(id);
+        if (inputEl) inputEl.value = todayStr;
+
+        const displayId = id.replace('input-', 'display-');
+        const displayEl = document.getElementById(displayId);
+        if (displayEl) displayEl.innerText = formatDate(todayStr);
+    });
 }
 
-function setTriggerDate(targetId, dateObj) {
-    const textElem = document.getElementById(`text-${targetId}`);
-    if (textElem) {
-        textElem.dataset.iso = dateObj.toISOString();
-        textElem.innerText = formatDate(dateObj.toISOString());
-    }
-}
-
-function getTriggerDate(targetId) {
-    const textElem = document.getElementById(`text-${targetId}`);
-    return textElem && textElem.dataset.iso ? textElem.dataset.iso : new Date().toISOString();
-}
-
-// FETCH ALL DATA FROM SUPABASE (SAFE SAFEGUARDED)
+// FETCH ALL DATA FROM SUPABASE
 async function loadAllData() {
     try {
         const fetchResidents = sb.from('residents').select('*').order('house_number', { ascending: true });
@@ -76,21 +74,11 @@ async function loadAllData() {
         const fetchIncomes = sb.from('other_incomes').select('*').order('id', { ascending: false });
         const fetchAnnouncements = sb.from('announcements').select('*').order('id', { ascending: false });
         const fetchInventories = sb.from('inventories').select('*').order('id', { ascending: false });
-        
-        // Coba fetch item_usages dengan fallback aman jika relation error
         const fetchUsages = sb.from('item_usages').select('*').order('id', { ascending: false });
 
         const [resResidents, resDues, resExp, resInc, resAnn, resInv, resUsage] = await Promise.all([
             fetchResidents, fetchDues, fetchExpenses, fetchIncomes, fetchAnnouncements, fetchInventories, fetchUsages
         ]);
-
-        if (resResidents.error) console.error("Error residents:", resResidents.error);
-        if (resDues.error) console.error("Error dues:", resDues.error);
-        if (resExp.error) console.error("Error expenses:", resExp.error);
-        if (resInc.error) console.error("Error incomes:", resInc.error);
-        if (resAnn.error) console.error("Error announcements:", resAnn.error);
-        if (resInv.error) console.error("Error inventories:", resInv.error);
-        if (resUsage.error) console.error("Error usages:", resUsage.error);
 
         state.residents = resResidents.data || [];
         state.duesPayments = resDues.data || [];
@@ -149,29 +137,9 @@ function renderDashboard() {
     if (elBalance) elBalance.innerText = formatRupiah(totalBalance);
     if (elIncome) elIncome.innerText = formatRupiah(totalIncome);
     if (elExpense) elExpense.innerText = formatRupiah(totalExpense);
-
-    // Amankan pengecekan elemen Progres Iuran (jika di-HTML ada)
-    const elPercent = document.getElementById('dues-percent');
-    if (elPercent) {
-        const now = new Date();
-        const currentMonthDues = state.duesPayments.filter(p => {
-            if (!p.created_at) return false;
-            const d = new Date(p.created_at);
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && Number(p.amount) > 0;
-        });
-
-        const paidHousesCount = new Set(currentMonthDues.map(p => p.house_number)).size;
-        const totalHouses = state.residents.length || 1;
-        const percentage = Math.round((paidHousesCount / totalHouses) * 100);
-
-        elPercent.innerText = `${percentage}%`;
-        if (document.getElementById('dues-paid-count')) document.getElementById('dues-paid-count').innerText = paidHousesCount;
-        if (document.getElementById('dues-total-count')) document.getElementById('dues-total-count').innerText = totalHouses;
-        if (document.getElementById('dues-progress-fill')) document.getElementById('dues-progress-fill').style.width = `${percentage}%`;
-    }
 }
 
-// RENDER TAB DETAIL INFORMASI (IURAN WARGA) DENGAN RANGE TANGGAL
+// RENDER TAB DETAIL INFORMASI
 function renderDuesTab() {
     const container = document.getElementById('dues-list');
     if (!container) return;
@@ -179,23 +147,15 @@ function renderDuesTab() {
     const searchInput = document.getElementById('search-resident');
     const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
 
+    const startDate = calState.duesStart;
+    const endDate = calState.duesEnd;
+
     let filteredDues = state.duesPayments.filter(item => {
         if (!item.created_at) return true;
-        const d = new Date(item.created_at);
+        const d = item.created_at.split('T')[0];
         
-        let matchStart = true;
-        let matchEnd = true;
-
-        if (state.duesFilterStartDate) {
-            const start = new Date(state.duesFilterStartDate);
-            start.setHours(0,0,0,0);
-            matchStart = d >= start;
-        }
-        if (state.duesFilterEndDate) {
-            const end = new Date(state.duesFilterEndDate);
-            end.setHours(23,59,59,999);
-            matchEnd = d <= end;
-        }
+        let matchStart = startDate ? d >= startDate : true;
+        let matchEnd = endDate ? d <= endDate : true;
 
         return matchStart && matchEnd;
     });
@@ -239,7 +199,7 @@ function renderDuesTab() {
     container.innerHTML = html;
 }
 
-// RENDER MUTASI TRANSAKSI WITH DATE RANGE FILTER
+// RENDER MUTASI TRANSAKSI
 function renderMutations() {
     const container = document.getElementById('mutation-list');
     if (!container) return;
@@ -280,15 +240,14 @@ function renderMutations() {
         });
     });
 
-    if (state.mutationStartDate) {
-        const start = new Date(state.mutationStartDate);
-        start.setHours(0,0,0,0);
-        list = list.filter(item => new Date(item.date) >= start);
+    const startDate = calState.mutationStart;
+    const endDate = calState.mutationEnd;
+
+    if (startDate) {
+        list = list.filter(item => item.date.split('T')[0] >= startDate);
     }
-    if (state.mutationEndDate) {
-        const end = new Date(state.mutationEndDate);
-        end.setHours(23,59,59,999);
-        list = list.filter(item => new Date(item.date) <= end);
+    if (endDate) {
+        list = list.filter(item => item.date.split('T')[0] <= endDate);
     }
 
     list.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -322,6 +281,172 @@ function renderMutations() {
     container.innerHTML = html;
 }
 
+// CUSTOM CALENDAR LOGIC & CONTROLLER
+window.openCalendarModal = function(targetModule) {
+    calState.targetModule = targetModule;
+    
+    if (targetModule === 'dues') {
+        calState.startDate = calState.duesStart ? new Date(calState.duesStart) : null;
+        calState.endDate = calState.duesEnd ? new Date(calState.duesEnd) : null;
+    } else if (targetModule === 'mutation') {
+        calState.startDate = calState.mutationStart ? new Date(calState.mutationStart) : null;
+        calState.endDate = calState.mutationEnd ? new Date(calState.mutationEnd) : null;
+    } else {
+        // Single Date Input Mode for Forms
+        const hiddenInputId = targetModule.replace('form-', 'input-');
+        const currentVal = document.getElementById(hiddenInputId)?.value;
+        calState.startDate = currentVal ? new Date(currentVal) : new Date(2026, 7, 5);
+        calState.endDate = null;
+    }
+
+    const baseDate = calState.startDate || new Date(2026, 7, 5);
+    calState.currentYear = baseDate.getFullYear();
+    calState.currentMonth = baseDate.getMonth();
+
+    renderCalendarGrid();
+    openModal('modal-calendar');
+};
+
+function renderCalendarGrid() {
+    const monthText = document.getElementById('cal-month-year-text');
+    if (monthText) {
+        monthText.innerText = `${MONTH_NAMES[calState.currentMonth]} ${calState.currentYear}`;
+    }
+
+    const grid = document.getElementById('calendar-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const firstDayIndex = new Date(calState.currentYear, calState.currentMonth, 1).getDay();
+    const daysInMonth = new Date(calState.currentYear, calState.currentMonth + 1, 0).getDate();
+
+    for (let i = 0; i < firstDayIndex; i++) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'cal-day-cell empty';
+        grid.appendChild(emptyDiv);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'cal-day-cell';
+        cell.innerText = day;
+
+        const thisDate = new Date(calState.currentYear, calState.currentMonth, day);
+        const thisStr = formatDateToISO(thisDate);
+
+        const startStr = calState.startDate ? formatDateToISO(calState.startDate) : null;
+        const endStr = calState.endDate ? formatDateToISO(calState.endDate) : null;
+
+        if (startStr && endStr) {
+            if (thisStr === startStr && thisStr === endStr) {
+                cell.classList.add('selected-single');
+            } else if (thisStr === startStr) {
+                cell.classList.add('selected-start');
+            } else if (thisStr === endStr) {
+                cell.classList.add('selected-end');
+            } else if (thisStr > startStr && thisStr < endStr) {
+                cell.classList.add('in-range');
+            }
+        } else if (startStr && thisStr === startStr) {
+            cell.classList.add('selected-single');
+        }
+
+        cell.addEventListener('click', () => handleDateClick(thisDate));
+        grid.appendChild(cell);
+    }
+}
+
+function handleDateClick(dateObj) {
+    const isSingleMode = calState.targetModule.startsWith('form-');
+
+    if (isSingleMode) {
+        calState.startDate = dateObj;
+        calState.endDate = null;
+    } else {
+        if (!calState.startDate || (calState.startDate && calState.endDate)) {
+            calState.startDate = dateObj;
+            calState.endDate = null;
+        } else if (calState.startDate && !calState.endDate) {
+            if (dateObj < calState.startDate) {
+                calState.startDate = dateObj;
+            } else {
+                calState.endDate = dateObj;
+            }
+        }
+    }
+    renderCalendarGrid();
+}
+
+function formatDateToISO(d) {
+    if (!d) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function setupCalendarListeners() {
+    const btnPrev = document.getElementById('cal-prev-month');
+    if (btnPrev) {
+        btnPrev.addEventListener('click', () => {
+            calState.currentMonth--;
+            if (calState.currentMonth < 0) {
+                calState.currentMonth = 11;
+                calState.currentYear--;
+            }
+            renderCalendarGrid();
+        });
+    }
+
+    const btnNext = document.getElementById('cal-next-month');
+    if (btnNext) {
+        btnNext.addEventListener('click', () => {
+            calState.currentMonth++;
+            if (calState.currentMonth > 11) {
+                calState.currentMonth = 0;
+                calState.currentYear++;
+            }
+            renderCalendarGrid();
+        });
+    }
+
+    const btnApply = document.getElementById('btn-apply-calendar');
+    if (btnApply) {
+        btnApply.addEventListener('click', () => {
+            const startISO = calState.startDate ? formatDateToISO(calState.startDate) : '';
+            const endISO = calState.endDate ? formatDateToISO(calState.endDate) : startISO;
+
+            if (calState.targetModule === 'dues') {
+                calState.duesStart = startISO;
+                calState.duesEnd = endISO;
+
+                document.getElementById('display-dues-start').innerText = startISO ? formatDate(startISO) : 'Pilih Tanggal';
+                document.getElementById('display-dues-end').innerText = endISO ? formatDate(endISO) : 'Pilih Tanggal';
+                renderDuesTab();
+            } else if (calState.targetModule === 'mutation') {
+                calState.mutationStart = startISO;
+                calState.mutationEnd = endISO;
+
+                document.getElementById('display-mutation-start').innerText = startISO ? formatDate(startISO) : 'Pilih Tanggal';
+                document.getElementById('display-mutation-end').innerText = endISO ? formatDate(endISO) : 'Pilih Tanggal';
+                renderMutations();
+            } else if (calState.targetModule.startsWith('form-')) {
+                // Apply single date to form hidden input & display text
+                const hiddenInputId = calState.targetModule.replace('form-', 'input-');
+                const displayId = calState.targetModule.replace('form-', 'display-');
+
+                const inputEl = document.getElementById(hiddenInputId);
+                const displayEl = document.getElementById(displayId);
+
+                if (inputEl) inputEl.value = startISO;
+                if (displayEl) displayEl.innerText = formatDate(startISO);
+            }
+
+            closeModal('modal-calendar');
+        });
+    }
+}
+
 // RENDER PENGUMUMAN
 function renderAnnouncements() {
     const container = document.getElementById('announcement-list');
@@ -347,7 +472,7 @@ function renderAnnouncements() {
     container.innerHTML = html;
 }
 
-// RENDER BARANG ASET KAMPUNG
+// RENDER BARANG ASET
 function renderInventoryTab() {
     const container = document.getElementById('inventory-list');
     if (!container) return;
@@ -381,7 +506,7 @@ function renderInventoryTab() {
     container.innerHTML = html;
 }
 
-// RENDER RIWAYAT SEWA / PINJAM BARANG
+// RENDER SEWA / PINJAM
 function renderUsageTab() {
     const container = document.getElementById('usage-list');
     if (!container) return;
@@ -445,52 +570,7 @@ function populateInventorySelect() {
     });
 }
 
-// CUSTOM CALENDAR LOGIC
-function openCalendarPicker(targetInputId) {
-    state.calTargetInputId = targetInputId;
-    state.calSelectedDate = new Date();
-    state.calCurrentDate = new Date();
-    renderCalendar();
-    openModal('modal-calendar');
-}
-
-function renderCalendar() {
-    const year = state.calCurrentDate.getFullYear();
-    const month = state.calCurrentDate.getMonth();
-    
-    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-    const elLabel = document.getElementById('cal-month-year-label');
-    if (elLabel) elLabel.innerText = `${monthNames[month]} ${year}`;
-
-    const container = document.getElementById('calendar-days-container');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const totalDays = new Date(year, month + 1, 0).getDate();
-
-    for (let i = 0; i < firstDay; i++) {
-        container.innerHTML += `<div class="cal-day empty"></div>`;
-    }
-
-    for (let day = 1; day <= totalDays; day++) {
-        const dateObj = new Date(year, month, day);
-        const isSelected = state.calSelectedDate && 
-                           dateObj.getDate() === state.calSelectedDate.getDate() &&
-                           dateObj.getMonth() === state.calSelectedDate.getMonth() &&
-                           dateObj.getFullYear() === state.calSelectedDate.getFullYear();
-
-        container.innerHTML += `<div class="cal-day ${isSelected ? 'selected' : ''}" onclick="window.selectCalDay(${year}, ${month}, ${day})">${day}</div>`;
-    }
-}
-
-window.selectCalDay = function(year, month, day) {
-    state.calSelectedDate = new Date(year, month, day);
-    renderCalendar();
-};
-
-// EVENT LISTENERS
+// EVENT LISTENERS GENERAL
 function setupEventListeners() {
     document.querySelectorAll('.bottom-nav .nav-item').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -502,14 +582,6 @@ function setupEventListeners() {
             if (targetTab) targetTab.classList.add('active');
         });
     });
-
-    const btnGotoDues = document.getElementById('btn-goto-dues');
-    if (btnGotoDues) {
-        btnGotoDues.addEventListener('click', () => {
-            const navDues = document.querySelectorAll('.bottom-nav .nav-item')[1];
-            if (navDues) navDues.click();
-        });
-    }
 
     document.querySelectorAll('.subtab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -524,40 +596,19 @@ function setupEventListeners() {
         });
     });
 
-    // TRIGGER CALENDAR FOR ADMIN FORMS
-    const bindCal = (trigId, targetKey) => {
-        const el = document.getElementById(trigId);
-        if (el) el.addEventListener('click', () => openCalendarPicker(targetKey));
-    };
-
-    bindCal('trigger-dues-date', 'dues-date');
-    bindCal('trigger-bulk-date', 'bulk-date');
-    bindCal('trigger-income-date', 'income-date');
-    bindCal('trigger-expense-date', 'expense-date');
-    bindCal('trigger-use-date', 'use-date');
-    bindCal('trigger-return-date', 'return-date');
-
-    // TRIGGER MUTASI RANGE FILTER
-    bindCal('trigger-mutation-start', 'mutation-start');
-    bindCal('trigger-mutation-end', 'mutation-end');
-
     const btnSearchMut = document.getElementById('btn-search-mutation');
     if (btnSearchMut) btnSearchMut.addEventListener('click', renderMutations);
 
     const btnResetMut = document.getElementById('btn-reset-mutation-filter');
     if (btnResetMut) {
         btnResetMut.addEventListener('click', () => {
-            state.mutationStartDate = null;
-            state.mutationEndDate = null;
-            document.getElementById('text-mutation-start').innerText = 'Semua Tanggal';
-            document.getElementById('text-mutation-end').innerText = 'Semua Tanggal';
+            calState.mutationStart = '';
+            calState.mutationEnd = '';
+            document.getElementById('display-mutation-start').innerText = 'Pilih Tanggal';
+            document.getElementById('display-mutation-end').innerText = 'Pilih Tanggal';
             renderMutations();
         });
     }
-
-    // TRIGGER TAB DETAIL INFORMASI (IURAN) RANGE FILTER
-    bindCal('trigger-dues-filter-start', 'dues-filter-start');
-    bindCal('trigger-dues-filter-end', 'dues-filter-end');
 
     const btnSearchDues = document.getElementById('btn-search-dues');
     if (btnSearchDues) btnSearchDues.addEventListener('click', renderDuesTab);
@@ -565,56 +616,11 @@ function setupEventListeners() {
     const btnResetDues = document.getElementById('btn-reset-dues-filter');
     if (btnResetDues) {
         btnResetDues.addEventListener('click', () => {
-            state.duesFilterStartDate = null;
-            state.duesFilterEndDate = null;
-            document.getElementById('text-dues-filter-start').innerText = 'Semua Tanggal';
-            document.getElementById('text-dues-filter-end').innerText = 'Semua Tanggal';
+            calState.duesStart = '';
+            calState.duesEnd = '';
+            document.getElementById('display-dues-start').innerText = 'Pilih Tanggal';
+            document.getElementById('display-dues-end').innerText = 'Pilih Tanggal';
             renderDuesTab();
-        });
-    }
-
-    // CALENDAR CONTROLS
-    const btnCalPrev = document.getElementById('btn-cal-prev-month');
-    if (btnCalPrev) {
-        btnCalPrev.addEventListener('click', () => {
-            state.calCurrentDate.setMonth(state.calCurrentDate.getMonth() - 1);
-            renderCalendar();
-        });
-    }
-
-    const btnCalNext = document.getElementById('btn-cal-next-month');
-    if (btnCalNext) {
-        btnCalNext.addEventListener('click', () => {
-            state.calCurrentDate.setMonth(state.calCurrentDate.getMonth() + 1);
-            renderCalendar();
-        });
-    }
-
-    const btnCalBack = document.getElementById('btn-cal-back');
-    if (btnCalBack) btnCalBack.addEventListener('click', () => closeModal('modal-calendar'));
-
-    const btnCalSub = document.getElementById('btn-cal-submit');
-    if (btnCalSub) {
-        btnCalSub.addEventListener('click', () => {
-            if (!state.calTargetInputId) return;
-            
-            if (state.calTargetInputId === 'mutation-start') {
-                state.mutationStartDate = state.calSelectedDate;
-                document.getElementById('text-mutation-start').innerText = formatDate(state.calSelectedDate.toISOString());
-            } else if (state.calTargetInputId === 'mutation-end') {
-                state.mutationEndDate = state.calSelectedDate;
-                document.getElementById('text-mutation-end').innerText = formatDate(state.calSelectedDate.toISOString());
-            } else if (state.calTargetInputId === 'dues-filter-start') {
-                state.duesFilterStartDate = state.calSelectedDate;
-                document.getElementById('text-dues-filter-start').innerText = formatDate(state.calSelectedDate.toISOString());
-            } else if (state.calTargetInputId === 'dues-filter-end') {
-                state.duesFilterEndDate = state.calSelectedDate;
-                document.getElementById('text-dues-filter-end').innerText = formatDate(state.calSelectedDate.toISOString());
-            } else {
-                setTriggerDate(state.calTargetInputId, state.calSelectedDate);
-            }
-
-            closeModal('modal-calendar');
         });
     }
 
@@ -624,7 +630,7 @@ function setupEventListeners() {
     const btnCopyDana = document.getElementById('btn-copy-dana');
     if (btnCopyDana) {
         btnCopyDana.addEventListener('click', () => {
-            const num = document.getElementById('dana-number').innerText;
+            const num = document.getElementById('dana-number')?.innerText || '';
             navigator.clipboard.writeText(num);
             showCustomAlert("Berhasil", "Nomor DANA berhasil disalin!");
         });
@@ -633,6 +639,8 @@ function setupEventListeners() {
     const fabAdmin = document.getElementById('fab-admin');
     if (fabAdmin) {
         fabAdmin.addEventListener('click', () => {
+            populateHouseSelect();
+            populateInventorySelect();
             if (state.isAdmin) {
                 openModal('modal-admin');
             } else {
@@ -651,12 +659,13 @@ function setupEventListeners() {
     if (formLogin) {
         formLogin.addEventListener('submit', (e) => {
             e.preventDefault();
-            const pin = document.getElementById('login-pin').value;
-            if (pin === "3462" || pin === "6234") {
+            const pin = document.getElementById('login-pin')?.value;
+            if (pin === "3462" || pin === "3642") {
                 state.isAdmin = true;
                 localStorage.setItem("admin_session", "true");
                 closeModal('modal-login');
-                document.getElementById('login-pin').value = '';
+                const pinEl = document.getElementById('login-pin');
+                if (pinEl) pinEl.value = '';
                 openModal('modal-admin');
                 renderUsageTab();
             } else {
@@ -685,7 +694,7 @@ function setupEventListeners() {
             e.preventDefault();
             const house_number = document.getElementById('dues-house-number').value;
             const amount = Number(document.getElementById('dues-amount').value);
-            const created_at = getTriggerDate('dues-date');
+            const created_at = document.getElementById('input-dues-date').value;
 
             const { error } = await sb.from('dues_payments').insert([{ house_number, amount, created_at }]);
             handleFormResponse(error, "Iuran berhasil disimpan!");
@@ -697,7 +706,7 @@ function setupEventListeners() {
         formBulkDues.addEventListener('submit', async (e) => {
             e.preventDefault();
             const rawText = document.getElementById('bulk-text').value.trim();
-            const created_at = getTriggerDate('bulk-date');
+            const created_at = document.getElementById('input-bulk-date').value;
             
             const lines = rawText.split('\n');
             const payload = [];
@@ -729,7 +738,7 @@ function setupEventListeners() {
             e.preventDefault();
             const title = document.getElementById('income-title').value;
             const amount = Number(document.getElementById('income-amount').value);
-            const created_at = getTriggerDate('income-date');
+            const created_at = document.getElementById('input-income-date').value;
 
             const { error } = await sb.from('other_incomes').insert([{ title, amount, created_at }]);
             handleFormResponse(error, "Pemasukan berhasil disimpan!");
@@ -746,7 +755,7 @@ function setupEventListeners() {
             const pic = document.getElementById('expense-pic').value;
             const receipt_url = document.getElementById('expense-receipt').value;
             const proof_url = document.getElementById('expense-proof').value;
-            const created_at = getTriggerDate('expense-date');
+            const created_at = document.getElementById('input-expense-date').value;
 
             const { error } = await sb.from('expenses').insert([{ category, title, amount, pic, receipt_url, proof_url, created_at }]);
             handleFormResponse(error, "Pengeluaran berhasil disimpan!");
@@ -775,7 +784,7 @@ function setupEventListeners() {
             const inventory_id = Number(document.getElementById('use-inventory-id').value);
             const quantity = Number(document.getElementById('use-qty').value);
             const use_type = document.getElementById('use-type').value;
-            const use_date = getTriggerDate('use-date');
+            const use_date = document.getElementById('input-use-date').value;
             const income_amount = Number(document.getElementById('use-income').value);
 
             const currentInv = state.inventories.find(i => i.id === inventory_id);
@@ -813,7 +822,7 @@ function setupEventListeners() {
         formReturnItem.addEventListener('submit', async (e) => {
             e.preventDefault();
             const usageId = document.getElementById('return-usage-id').value;
-            const returnDateVal = getTriggerDate('return-date');
+            const returnDateVal = document.getElementById('input-return-date').value;
 
             const usageData = state.itemUsages.find(u => u.id == usageId);
             if (!usageData) return;
@@ -900,10 +909,18 @@ window.openReturnModal = function(id) {
     const invObj = state.inventories.find(i => i.id === usage.inventory_id);
     const itemName = invObj ? invObj.name : 'Barang';
 
-    document.getElementById('return-usage-id').value = id;
-    document.getElementById('return-item-info').innerText = `${usage.user_name} mengembalikan ${usage.quantity} unit ${itemName}`;
-    
-    setTriggerDate('return-date', new Date());
+    const idEl = document.getElementById('return-usage-id');
+    const infoEl = document.getElementById('return-item-info');
+    const inputEl = document.getElementById('input-return-date');
+    const displayEl = document.getElementById('display-return-date');
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (idEl) idEl.value = id;
+    if (infoEl) infoEl.innerText = `${usage.user_name} mengembalikan ${usage.quantity} unit ${itemName}`;
+    if (inputEl) inputEl.value = todayStr;
+    if (displayEl) displayEl.innerText = formatDate(todayStr);
+
     openModal('modal-return');
 };
 
@@ -962,10 +979,13 @@ window.openEditModal = function(table, id) {
     const data = state[stateKey].find(x => x.id == id);
     if (!data) return;
 
-    document.getElementById('edit-id').value = id;
-    document.getElementById('edit-table').value = table;
+    const idEl = document.getElementById('edit-id');
+    const tableEl = document.getElementById('edit-table');
+    if (idEl) idEl.value = id;
+    if (tableEl) tableEl.value = table;
 
     const fieldsContainer = document.getElementById('edit-fields');
+    if (!fieldsContainer) return;
     fieldsContainer.innerHTML = '';
 
     if (table === 'item_usages') {
@@ -1060,7 +1080,7 @@ if (formEditGen) {
             payload.status = newStatus;
 
             if (oldUsage && oldUsage.status === 'Aktif' && newStatus === 'Selesai') {
-                payload.return_date = new Date().toISOString();
+                payload.return_date = new Date().toISOString().split('T')[0];
                 const inv = state.inventories.find(i => i.id === oldUsage.inventory_id);
                 if (inv) {
                     await sb.from('inventories').update({ quantity: inv.quantity + oldUsage.quantity }).eq('id', inv.id);
