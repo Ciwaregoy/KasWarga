@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initApp();
     setupEventListeners();
     setupCalendarListeners();
+    setupHardwareBackNavigation(); // Dukungan Tombol Back HP
 });
 
 async function initApp() {
@@ -46,6 +47,25 @@ async function initApp() {
     }
     initTodayDates();
     await loadAllData();
+}
+
+// HARDWARE BACK BUTTON (BISA DIPAKAI UNTUK NAVIGASI SMARTPHONE)
+function setupHardwareBackNavigation() {
+    window.addEventListener('popstate', (e) => {
+        const activeModal = document.querySelector('.modal.active');
+        if (activeModal) {
+            activeModal.classList.remove('active');
+        } else {
+            const activeNav = document.querySelector('.bottom-nav .nav-item.active');
+            if (activeNav && activeNav.dataset.tab !== 'tab-home') {
+                switchTab('tab-home');
+            }
+        }
+    });
+}
+
+function pushHistoryState() {
+    history.pushState({ modalOpen: true }, "");
 }
 
 function initTodayDates() {
@@ -104,8 +124,8 @@ async function loadAllData() {
 
 // UTILS
 function maskName(name) {
-    if (!name) return "";
-    return name.split(' ').map(word => {
+    if (!name || typeof name !== 'string') return "";
+    return name.trim().split(' ').map(word => {
         if (word.length <= 1) return word;
         return word[0] + '*'.repeat(word.length - 1);
     }).join(' ');
@@ -219,12 +239,13 @@ function renderMutations() {
     });
 
     state.otherIncomes.forEach(i => {
+        const maskedName = i.source_name && i.source_name.trim() !== '' ? maskName(i.source_name) : null;
         list.push({
             type: 'in',
             title: i.title,
             amount: Number(i.amount),
             date: i.created_at || new Date().toISOString(),
-            sub: 'Pemasukan Lain'
+            sub: maskedName ? `Pemasukan Lain (${maskedName})` : 'Pemasukan Lain'
         });
     });
 
@@ -548,6 +569,17 @@ function renderUsageTab() {
     container.innerHTML = html;
 }
 
+function switchTab(tabId) {
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    
+    const targetNav = document.querySelector(`.bottom-nav .nav-item[data-tab="${tabId}"]`);
+    const targetTab = document.getElementById(tabId);
+
+    if (targetNav) targetNav.classList.add('active');
+    if (targetTab) targetTab.classList.add('active');
+}
+
 function populateHouseSelect() {
     const select = document.getElementById('dues-house-number');
     if (!select) return;
@@ -572,12 +604,9 @@ function populateInventorySelect() {
 function setupEventListeners() {
     document.querySelectorAll('.bottom-nav .nav-item').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.bottom-nav .nav-item').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            
-            btn.classList.add('active');
-            const targetTab = document.getElementById(btn.dataset.tab);
-            if (targetTab) targetTab.classList.add('active');
+            const targetTab = btn.dataset.tab;
+            switchTab(targetTab);
+            pushHistoryState();
         });
     });
 
@@ -734,11 +763,12 @@ function setupEventListeners() {
     if (formOtherIncome) {
         formOtherIncome.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const source_name = document.getElementById('income-source-name')?.value || null;
             const title = document.getElementById('income-title').value;
             const amount = Number(document.getElementById('income-amount').value);
             const created_at = document.getElementById('input-income-date').value;
 
-            const { error } = await sb.from('other_incomes').insert([{ title, amount, created_at }]);
+            const { error } = await sb.from('other_incomes').insert([{ source_name, title, amount, created_at }]);
             handleFormResponse(error, "Pemasukan berhasil disimpan!", e.target);
         });
     }
@@ -805,7 +835,8 @@ function setupEventListeners() {
 
             if (income_amount > 0) {
                 await sb.from('other_incomes').insert([{
-                    title: `Sewa Barang (${currentInv.name}) - ${user_name}`,
+                    source_name: user_name,
+                    title: `Sewa Barang (${currentInv.name})`,
                     amount: income_amount,
                     created_at: use_date
                 }]);
@@ -1012,6 +1043,10 @@ window.openEditModal = function(table, id) {
     } else if (table === 'other_incomes') {
         fieldsContainer.innerHTML = `
             <div class="form-group">
+                <label>Nama Penyumbang / Sumber (Opsional)</label>
+                <input type="text" id="edit-val-source-name" class="form-control" value="${data.source_name || ''}">
+            </div>
+            <div class="form-group">
                 <label>Judul / Sumber Pemasukan</label>
                 <input type="text" id="edit-val-title" class="form-control" value="${data.title || ''}" required>
             </div>
@@ -1168,6 +1203,7 @@ if (formEditGen) {
             payload.amount = Number(document.getElementById('edit-val-amount').value);
             payload.created_at = document.getElementById('edit-val-date').value;
         } else if (table === 'other_incomes') {
+            payload.source_name = document.getElementById('edit-val-source-name').value || null;
             payload.title = document.getElementById('edit-val-title').value;
             payload.amount = Number(document.getElementById('edit-val-amount').value);
             payload.created_at = document.getElementById('edit-val-date').value;
@@ -1249,15 +1285,20 @@ window.confirmDelete = function(table, id) {
     });
 };
 
-// MODALS HELPERS
+// MODALS HELPERS WITH PUSH STATE UNTUK BACK BUTTON
 function openModal(id) {
     const modal = document.getElementById(id);
-    if (modal) modal.classList.add('active');
+    if (modal) {
+        modal.classList.add('active');
+        pushHistoryState();
+    }
 }
 
 function closeModal(id) {
     const modal = document.getElementById(id);
-    if (modal) modal.classList.remove('active');
+    if (modal) {
+        modal.classList.remove('active');
+    }
 }
 
 function showCustomAlert(title, message) {
