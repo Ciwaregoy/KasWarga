@@ -196,7 +196,7 @@ body {
     font-weight: 800;
 }
 
-/* WARNA NOMINAL LEBIH JELAS & HIGH CONTRAST */
+/* WARNA NOMINAL KONTRAS DAN JELAS */
 .text-income { 
     color: #059669 !important; 
     font-size: 15px; 
@@ -209,7 +209,6 @@ body {
     font-weight: 800; 
 }
 
-/* Khusus untuk di dalam Card Biru Saldo */
 .card-balance-bank .text-income { 
     color: #34d399 !important; 
     text-shadow: 0 1px 3px rgba(0,0,0,0.4);
@@ -529,7 +528,6 @@ body {
     cursor: default;
 }
 
-/* SELECTED RANGE HIGHLIGHT STYLES */
 .cal-day-cell.selected-start {
     background-color: #1d72eb !important;
     color: #ffffff !important;
@@ -565,21 +563,7 @@ body {
     border-top: 1px solid #e2e8f0;
 }
 
-/* BADGES & LIST ITEMS */
-.badge {
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 800;
-}
-
-.badge-success { background: #d1fae5; color: #047857; border: 1px solid #a7f3d0; }
-.badge-warning { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-.badge-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-.badge-info { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-.badge-gray { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
-.badge-none { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-
+/* PERBAIKAN BADGES & LIST ITEMS */
 .list-container {
     display: flex;
     flex-direction: column;
@@ -594,7 +578,30 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px; /* Jarak aman antara info dan badge/tombol kanan */
 }
+
+.item-info {
+    flex: 1; /* Agar info kiri mengambil sisa ruang dengan rapi */
+}
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap; /* Mencegah teks terpotong / turun baris */
+    display: inline-block;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.badge-success { background: #d1fae5; color: #047857; border: 1px solid #a7f3d0; }
+.badge-warning { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.badge-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.badge-info { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.badge-gray { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+.badge-none { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
 .item-info h4 { font-size: 13px; font-weight: 700; }
 .item-info small { font-size: 11px; color: var(--text-muted); }
