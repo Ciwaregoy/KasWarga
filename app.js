@@ -7,8 +7,6 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // GLOBAL STATE
 let state = {
     isAdmin: false,
-    residents: [],
-    duesPayments: [],
     expenses: [],
     otherIncomes: [],
     announcements: [],
@@ -19,14 +17,12 @@ let state = {
 
 // CALENDAR STATE
 let calState = {
-    targetModule: 'dues',
+    targetModule: 'mutation',
     currentYear: 2026,
     currentMonth: 7,
     startDate: null,
     endDate: null,
     
-    duesStart: '',
-    duesEnd: '',
     mutationStart: '',
     mutationEnd: ''
 };
@@ -71,8 +67,8 @@ function pushHistoryState() {
 function initTodayDates() {
     const todayStr = new Date().toISOString().split('T')[0];
     const formDateIds = [
-        'input-dues-date', 'input-bulk-date', 'input-income-date', 
-        'input-expense-date', 'input-use-date', 'input-return-date'
+        'input-income-date', 'input-expense-date', 
+        'input-use-date', 'input-return-date'
     ];
     
     formDateIds.forEach(id => {
@@ -88,20 +84,16 @@ function initTodayDates() {
 // FETCH ALL DATA FROM SUPABASE
 async function loadAllData() {
     try {
-        const fetchResidents = sb.from('residents').select('*').order('house_number', { ascending: true });
-        const fetchDues = sb.from('dues_payments').select('*').order('id', { ascending: false });
         const fetchExpenses = sb.from('expenses').select('*').order('id', { ascending: false });
         const fetchIncomes = sb.from('other_incomes').select('*').order('id', { ascending: false });
         const fetchAnnouncements = sb.from('announcements').select('*').order('id', { ascending: false });
         const fetchInventories = sb.from('inventories').select('*').order('id', { ascending: false });
         const fetchUsages = sb.from('item_usages').select('*').order('id', { ascending: false });
 
-        const [resResidents, resDues, resExp, resInc, resAnn, resInv, resUsage] = await Promise.all([
-            fetchResidents, fetchDues, fetchExpenses, fetchIncomes, fetchAnnouncements, fetchInventories, fetchUsages
+        const [resExp, resInc, resAnn, resInv, resUsage] = await Promise.all([
+            fetchExpenses, fetchIncomes, fetchAnnouncements, fetchInventories, fetchUsages
         ]);
 
-        state.residents = resResidents.data || [];
-        state.duesPayments = resDues.data || [];
         state.expenses = resExp.data || [];
         state.otherIncomes = resInc.data || [];
         state.announcements = resAnn.data || [];
@@ -109,12 +101,10 @@ async function loadAllData() {
         state.itemUsages = resUsage.data || [];
 
         renderDashboard();
-        renderDuesTab();
         renderMutations();
         renderAnnouncements();
         renderInventoryTab();
         renderUsageTab();
-        populateHouseSelect();
         populateInventorySelect();
     } catch (err) {
         console.error("Critical Database Fetch Error:", err);
@@ -143,10 +133,7 @@ function formatDate(dateString) {
 
 // DASHBOARD
 function renderDashboard() {
-    const totalDues = state.duesPayments.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-    const totalOtherInc = state.otherIncomes.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-    const totalIncome = totalDues + totalOtherInc;
-    
+    const totalIncome = state.otherIncomes.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
     const totalExpense = state.expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
     const totalBalance = totalIncome - totalExpense;
 
@@ -159,84 +146,12 @@ function renderDashboard() {
     if (elExpense) elExpense.innerText = formatRupiah(totalExpense);
 }
 
-// RENDER TAB DETAIL INFORMASI
-function renderDuesTab() {
-    const container = document.getElementById('dues-list');
-    if (!container) return;
-
-    const searchInput = document.getElementById('search-resident');
-    const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
-
-    const startDate = calState.duesStart;
-    const endDate = calState.duesEnd;
-
-    let filteredDues = state.duesPayments.filter(item => {
-        if (!item.created_at) return true;
-        const d = item.created_at.split('T')[0];
-        
-        let matchStart = startDate ? d >= startDate : true;
-        let matchEnd = endDate ? d <= endDate : true;
-
-        return matchStart && matchEnd;
-    });
-
-    const filteredResidents = state.residents.filter(r => 
-        (r.house_number && r.house_number.toLowerCase().includes(searchQuery)) || 
-        (r.full_name && r.full_name.toLowerCase().includes(searchQuery))
-    );
-
-    if (filteredResidents.length === 0) {
-        container.innerHTML = '<div class="loading-state">Data warga tidak ditemukan</div>';
-        return;
-    }
-
-    let html = '';
-    filteredResidents.forEach(res => {
-        const housePayments = filteredDues.filter(p => p.house_number && p.house_number.toLowerCase() === res.house_number.toLowerCase());
-        
-        let badgeHtml = '';
-        if (housePayments.length === 0) {
-            badgeHtml = `<span class="badge badge-none">Belum Ada Catatan</span>`;
-        } else {
-            const latest = housePayments[0];
-            const amount = Number(latest.amount);
-            if (amount === 0) {
-                badgeHtml = `<span class="badge badge-gray">Rp 0</span>`;
-            } else {
-                badgeHtml = `<span class="badge badge-success">${formatRupiah(amount)}</span>`;
-            }
-        }
-
-        html += `
-            <div class="resident-card">
-                <div class="res-house">Rumah ${res.house_number}</div>
-                <div class="res-name">${maskName(res.full_name)}</div>
-                ${badgeHtml}
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-}
-
 // RENDER MUTASI TRANSAKSI
 function renderMutations() {
     const container = document.getElementById('mutation-list');
     if (!container) return;
 
     let list = [];
-
-    state.duesPayments.forEach(d => {
-        if (Number(d.amount) > 0) {
-            list.push({
-                type: 'in',
-                title: `Iuran Rumah ${d.house_number}`,
-                amount: Number(d.amount),
-                date: d.created_at || new Date().toISOString(),
-                sub: 'Iuran Warga'
-            });
-        }
-    });
 
     state.otherIncomes.forEach(i => {
         const maskedName = i.source_name && i.source_name.trim() !== '' ? maskName(i.source_name) : null;
@@ -245,7 +160,7 @@ function renderMutations() {
             title: i.title,
             amount: Number(i.amount),
             date: i.created_at || new Date().toISOString(),
-            sub: maskedName ? `Pemasukan Lain (${maskedName})` : 'Pemasukan Lain'
+            sub: maskedName ? `Pemasukan (${maskedName})` : 'Pemasukan'
         });
     });
 
@@ -306,10 +221,7 @@ function renderMutations() {
 window.openCalendarModal = function(targetModule) {
     calState.targetModule = targetModule;
     
-    if (targetModule === 'dues') {
-        calState.startDate = calState.duesStart ? new Date(calState.duesStart) : null;
-        calState.endDate = calState.duesEnd ? new Date(calState.duesEnd) : null;
-    } else if (targetModule === 'mutation') {
+    if (targetModule === 'mutation') {
         calState.startDate = calState.mutationStart ? new Date(calState.mutationStart) : null;
         calState.endDate = calState.mutationEnd ? new Date(calState.mutationEnd) : null;
     } else {
@@ -436,14 +348,7 @@ function setupCalendarListeners() {
             const startISO = calState.startDate ? formatDateToISO(calState.startDate) : '';
             const endISO = calState.endDate ? formatDateToISO(calState.endDate) : startISO;
 
-            if (calState.targetModule === 'dues') {
-                calState.duesStart = startISO;
-                calState.duesEnd = endISO;
-
-                document.getElementById('display-dues-start').innerText = startISO ? formatDate(startISO) : 'Pilih Tanggal';
-                document.getElementById('display-dues-end').innerText = endISO ? formatDate(endISO) : 'Pilih Tanggal';
-                renderDuesTab();
-            } else if (calState.targetModule === 'mutation') {
+            if (calState.targetModule === 'mutation') {
                 calState.mutationStart = startISO;
                 calState.mutationEnd = endISO;
 
@@ -580,16 +485,6 @@ function switchTab(tabId) {
     if (targetTab) targetTab.classList.add('active');
 }
 
-function populateHouseSelect() {
-    const select = document.getElementById('dues-house-number');
-    if (!select) return;
-
-    select.innerHTML = '';
-    state.residents.forEach(r => {
-        select.innerHTML += `<option value="${r.house_number}">Rumah ${r.house_number} (${maskName(r.full_name)})</option>`;
-    });
-}
-
 function populateInventorySelect() {
     const select = document.getElementById('use-inventory-id');
     if (!select) return;
@@ -637,23 +532,6 @@ function setupEventListeners() {
         });
     }
 
-    const btnSearchDues = document.getElementById('btn-search-dues');
-    if (btnSearchDues) btnSearchDues.addEventListener('click', renderDuesTab);
-
-    const btnResetDues = document.getElementById('btn-reset-dues-filter');
-    if (btnResetDues) {
-        btnResetDues.addEventListener('click', () => {
-            calState.duesStart = '';
-            calState.duesEnd = '';
-            document.getElementById('display-dues-start').innerText = 'Pilih Tanggal';
-            document.getElementById('display-dues-end').innerText = 'Pilih Tanggal';
-            renderDuesTab();
-        });
-    }
-
-    const searchRes = document.getElementById('search-resident');
-    if (searchRes) searchRes.addEventListener('input', renderDuesTab);
-
     const btnCopyDana = document.getElementById('btn-copy-dana');
     if (btnCopyDana) {
         btnCopyDana.addEventListener('click', () => {
@@ -666,7 +544,6 @@ function setupEventListeners() {
     const fabAdmin = document.getElementById('fab-admin');
     if (fabAdmin) {
         fabAdmin.addEventListener('click', () => {
-            populateHouseSelect();
             populateInventorySelect();
             if (state.isAdmin) {
                 openModal('modal-admin');
@@ -715,50 +592,6 @@ function setupEventListeners() {
     }
 
     // FORMS SUBMIT WITH AUTOMATIC RESET
-    const formSingleDues = document.getElementById('form-single-dues');
-    if (formSingleDues) {
-        formSingleDues.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const house_number = document.getElementById('dues-house-number').value;
-            const amount = Number(document.getElementById('dues-amount').value);
-            const created_at = document.getElementById('input-dues-date').value;
-
-            const { error } = await sb.from('dues_payments').insert([{ house_number, amount, created_at }]);
-            handleFormResponse(error, "Iuran berhasil disimpan!", e.target);
-        });
-    }
-
-    const formBulkDues = document.getElementById('form-bulk-dues');
-    if (formBulkDues) {
-        formBulkDues.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const rawText = document.getElementById('bulk-text').value.trim();
-            const created_at = document.getElementById('input-bulk-date').value;
-            
-            const lines = rawText.split('\n');
-            const payload = [];
-
-            lines.forEach(line => {
-                const parts = line.trim().split(/\s+/);
-                if (parts.length >= 2) {
-                    payload.push({
-                        house_number: parts[0],
-                        amount: Number(parts[1]),
-                        created_at: created_at
-                    });
-                }
-            });
-
-            if (payload.length === 0) {
-                showCustomAlert("Gagal", "Format data bulk tidak valid!");
-                return;
-            }
-
-            const { error } = await sb.from('dues_payments').insert(payload);
-            handleFormResponse(error, `${payload.length} Data Iuran berhasil diproses!`, e.target);
-        });
-    }
-
     const formOtherIncome = document.getElementById('form-other-income');
     if (formOtherIncome) {
         formOtherIncome.addEventListener('submit', async (e) => {
@@ -890,18 +723,6 @@ function setupEventListeners() {
         });
     }
 
-    const formRes = document.getElementById('form-resident');
-    if (formRes) {
-        formRes.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const house_number = document.getElementById('res-house').value.toUpperCase();
-            const full_name = document.getElementById('res-name').value;
-
-            const { error } = await sb.from('residents').insert([{ house_number, full_name }]);
-            handleFormResponse(error, "Data warga berhasil ditambahkan!", e.target);
-        });
-    }
-
     const manageType = document.getElementById('manage-type');
     if (manageType) manageType.addEventListener('change', renderManageData);
 
@@ -967,13 +788,11 @@ function renderManageData() {
     if (!container) return;
     
     let data = [];
-    if (table === 'dues_payments') data = state.duesPayments;
-    else if (table === 'expenses') data = state.expenses;
+    if (table === 'expenses') data = state.expenses;
     else if (table === 'other_incomes') data = state.otherIncomes;
     else if (table === 'inventories') data = state.inventories;
     else if (table === 'item_usages') data = state.itemUsages;
     else if (table === 'announcements') data = state.announcements;
-    else if (table === 'residents') data = state.residents;
 
     if (!data || data.length === 0) {
         container.innerHTML = '<div class="loading-state">Data kosong</div>';
@@ -982,8 +801,8 @@ function renderManageData() {
 
     let html = '';
     data.forEach(item => {
-        let label = item.name || item.title || (item.user_name ? `${item.user_name} (${item.status})` : `Rumah ${item.house_number}`) || item.full_name;
-        let sub = item.price !== undefined ? `${item.quantity || 1} unit x ${formatRupiah(item.price)}` : item.amount !== undefined ? formatRupiah(item.amount) : item.use_type ? `Unit ID: ${item.inventory_id} - ${item.quantity} unit` : item.content || item.full_name || '';
+        let label = item.name || item.title || (item.user_name ? `${item.user_name} (${item.status})` : '');
+        let sub = item.price !== undefined ? `${item.quantity || 1} unit x ${formatRupiah(item.price)}` : item.amount !== undefined ? formatRupiah(item.amount) : item.use_type ? `Unit ID: ${item.inventory_id} - ${item.quantity} unit` : item.content || '';
 
         html += `
             <div class="list-item" style="margin-bottom:8px;">
@@ -1008,7 +827,7 @@ function renderManageData() {
 
 // OPEN EDIT MODAL FULL FIELDS
 window.openEditModal = function(table, id) {
-    let stateKey = table === 'dues_payments' ? 'duesPayments' : table === 'other_incomes' ? 'otherIncomes' : table === 'item_usages' ? 'itemUsages' : table;
+    let stateKey = table === 'other_incomes' ? 'otherIncomes' : table === 'item_usages' ? 'itemUsages' : table;
     const data = state[stateKey].find(x => x.id == id);
     if (!data) return;
 
@@ -1021,26 +840,7 @@ window.openEditModal = function(table, id) {
     if (!fieldsContainer) return;
     fieldsContainer.innerHTML = '';
 
-    if (table === 'dues_payments') {
-        const houseOptions = state.residents.map(r => 
-            `<option value="${r.house_number}" ${r.house_number === data.house_number ? 'selected' : ''}>Rumah ${r.house_number} (${maskName(r.full_name)})</option>`
-        ).join('');
-
-        fieldsContainer.innerHTML = `
-            <div class="form-group">
-                <label>No Rumah Warga</label>
-                <select id="edit-val-house" class="form-control" required>${houseOptions}</select>
-            </div>
-            <div class="form-group">
-                <label>Nominal (Rp)</label>
-                <input type="number" id="edit-val-amount" class="form-control" value="${data.amount || 0}" required>
-            </div>
-            <div class="form-group">
-                <label>Tanggal Transaksi</label>
-                <input type="date" id="edit-val-date" class="form-control" value="${data.created_at ? data.created_at.split('T')[0] : ''}" required>
-            </div>
-        `;
-    } else if (table === 'other_incomes') {
+    if (table === 'other_incomes') {
         fieldsContainer.innerHTML = `
             <div class="form-group">
                 <label>Nama Penyumbang / Sumber (Opsional)</label>
@@ -1171,17 +971,6 @@ window.openEditModal = function(table, id) {
                 <textarea id="edit-val-content" class="form-control" rows="4" required>${data.content || ''}</textarea>
             </div>
         `;
-    } else if (table === 'residents') {
-        fieldsContainer.innerHTML = `
-            <div class="form-group">
-                <label>No Rumah</label>
-                <input type="text" id="edit-val-house" class="form-control" value="${data.house_number || ''}" required>
-            </div>
-            <div class="form-group">
-                <label>Nama Lengkap</label>
-                <input type="text" id="edit-val-name" class="form-control" value="${data.full_name || ''}" required>
-            </div>
-        `;
     }
 
     openModal('modal-edit');
@@ -1198,11 +987,7 @@ if (formEditGen) {
         
         let payload = {};
 
-        if (table === 'dues_payments') {
-            payload.house_number = document.getElementById('edit-val-house').value;
-            payload.amount = Number(document.getElementById('edit-val-amount').value);
-            payload.created_at = document.getElementById('edit-val-date').value;
-        } else if (table === 'other_incomes') {
+        if (table === 'other_incomes') {
             payload.source_name = document.getElementById('edit-val-source-name').value || null;
             payload.title = document.getElementById('edit-val-title').value;
             payload.amount = Number(document.getElementById('edit-val-amount').value);
@@ -1242,9 +1027,6 @@ if (formEditGen) {
         } else if (table === 'announcements') {
             payload.title = document.getElementById('edit-val-title').value;
             payload.content = document.getElementById('edit-val-content').value;
-        } else if (table === 'residents') {
-            payload.house_number = document.getElementById('edit-val-house').value.toUpperCase();
-            payload.full_name = document.getElementById('edit-val-name').value;
         }
 
         const { error } = await sb.from(table).update(payload).eq('id', targetId);
