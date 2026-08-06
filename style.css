@@ -127,6 +127,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 22px;
+    flex-shrink: 0;
 }
 
 .card-label-light {
@@ -137,12 +138,14 @@ body {
     display: block;
 }
 
+/* ANTI OFFSIDE: Saldo Utama dinamis menyesuaikan lebar layar */
 .card-balance-bank h2 {
-    font-size: 30px;
+    font-size: clamp(20px, 6.5vw, 30px) !important;
     font-weight: 800;
     margin: 4px 0;
     color: #ffffff !important;
     text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    word-break: break-word;
 }
 
 .balance-time-tag {
@@ -155,31 +158,36 @@ body {
     gap: 5px;
 }
 
+/* ANTI OFFSIDE: Container breakdown lebih fleksibel */
 .balance-breakdown-bank {
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: rgba(0, 0, 0, 0.25);
     backdrop-filter: blur(10px);
-    padding: 12px 16px;
+    padding: 12px 14px;
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    gap: 8px;
 }
 
 .breakdown-item {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    flex: 1;
+    min-width: 0; /* Biar flex child ga meluber keluar */
 }
 
 .arrow-badge {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: 12px;
+    flex-shrink: 0;
 }
 
 .arrow-badge.in { background: #10b981 !important; color: #ffffff !important; }
@@ -187,13 +195,19 @@ body {
 
 .breakdown-item small {
     display: block;
-    font-size: 10.5px;
+    font-size: 10px;
     opacity: 0.9;
+    white-space: nowrap;
 }
 
+/* ANTI OFFSIDE: Teks nominal masuk/keluar fleksibel & anti nabrak */
 .breakdown-item span {
-    font-size: 15px;
+    font-size: clamp(12px, 3.8vw, 15px) !important;
     font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
 }
 
 /* WARNA NOMINAL KONTRAS DAN JELAS */
@@ -223,6 +237,7 @@ body {
     width: 1px;
     height: 28px;
     background: rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
 }
 
 /* CARD GENERAL */
@@ -259,6 +274,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 14px;
+    flex-shrink: 0;
 }
 
 .bg-blue { background: #dbeafe; color: #1d4ed8; }
@@ -397,36 +413,6 @@ body {
     padding: 10px;
     font-size: 12px;
     border-radius: 10px;
-}
-
-.search-box {
-    margin-bottom: 12px;
-}
-
-.resident-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 10px;
-}
-
-.resident-card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 10px;
-    text-align: center;
-}
-
-.res-house {
-    font-weight: 700;
-    font-size: 13px;
-    color: var(--text);
-}
-
-.res-name {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin: 2px 0 6px 0;
 }
 
 /* STYLING CUSTOM KALENDER CANTIK ALA M-BANKING */
@@ -578,11 +564,29 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px; /* Jarak aman antara info dan badge/tombol kanan */
+    gap: 12px;
 }
 
 .item-info {
-    flex: 1; /* Agar info kiri mengambil sisa ruang dengan rapi */
+    flex: 1;
+    min-width: 0; /* Biar teks di dalam item-info gak meluber */
+}
+
+.item-info h4 { 
+    font-size: 13px; 
+    font-weight: 700; 
+    word-break: break-word;
+}
+
+.item-info small { font-size: 11px; color: var(--text-muted); }
+
+/* ANTI OFFSIDE: Nominal mutasi otomatis wrap/shrink kalo panjang */
+.item-amount { 
+    font-weight: 800; 
+    font-size: clamp(12px, 3.5vw, 14px); 
+    letter-spacing: 0.2px; 
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .badge {
@@ -590,7 +594,7 @@ body {
     border-radius: 20px;
     font-size: 11px;
     font-weight: 800;
-    white-space: nowrap; /* Mencegah teks terpotong / turun baris */
+    white-space: nowrap;
     display: inline-block;
     text-align: center;
     line-height: 1.2;
@@ -602,10 +606,6 @@ body {
 .badge-info { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
 .badge-gray { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
 .badge-none { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-
-.item-info h4 { font-size: 13px; font-weight: 700; }
-.item-info small { font-size: 11px; color: var(--text-muted); }
-.item-amount { font-weight: 800; font-size: 14px; letter-spacing: 0.2px; }
 
 /* BUTTONS */
 .btn {
@@ -676,7 +676,7 @@ body {
     color: #64748b;
     font-size: 11px;
     font-weight: 600;
-    width: 25%;
+    width: 33.33%;
     cursor: pointer;
 }
 
