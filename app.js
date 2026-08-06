@@ -371,7 +371,7 @@ function setupCalendarListeners() {
     }
 }
 
-// RENDER PENGUMUMAN
+// RENDER PENGUMUMAN (DENGAN INTEGRASI SUPORT ENTER / LINE BREAK)
 function renderAnnouncements() {
     const container = document.getElementById('announcement-list');
     if (!container) return;
@@ -387,7 +387,7 @@ function renderAnnouncements() {
             <div class="list-item">
                 <div class="item-info">
                     <h4>${a.title}</h4>
-                    <p style="font-size:12px; margin:4px 0;">${a.content}</p>
+                    <p>${a.content}</p>
                     <small>${formatDate(a.created_at)}</small>
                 </div>
             </div>

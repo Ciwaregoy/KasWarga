@@ -176,7 +176,7 @@ body {
     align-items: center;
     gap: 8px;
     flex: 1;
-    min-width: 0; /* Biar flex child ga meluber keluar */
+    min-width: 0;
 }
 
 .arrow-badge {
@@ -569,13 +569,22 @@ body {
 
 .item-info {
     flex: 1;
-    min-width: 0; /* Biar teks di dalam item-info gak meluber */
+    min-width: 0;
 }
 
 .item-info h4 { 
     font-size: 13px; 
     font-weight: 700; 
     word-break: break-word;
+}
+
+/* PERBAIKAN ENTER BISA TURUN BARIS PADA PENGUMUMAN */
+.item-info p { 
+    font-size: 12px; 
+    margin: 6px 0; 
+    white-space: pre-line;
+    line-height: 1.5;
+    color: var(--text);
 }
 
 .item-info small { font-size: 11px; color: var(--text-muted); }
