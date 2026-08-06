@@ -19,9 +19,9 @@ let state = {
 
 // CALENDAR STATE
 let calState = {
-    targetModule: 'dues', // 'dues', 'mutation', 'form-dues-date', 'form-bulk-date', 'form-income-date', 'form-expense-date', 'form-use-date', 'form-return-date'
+    targetModule: 'dues',
     currentYear: 2026,
-    currentMonth: 7, // 7 = Agustus 2026
+    currentMonth: 7,
     startDate: null,
     endDate: null,
     
@@ -292,7 +292,6 @@ window.openCalendarModal = function(targetModule) {
         calState.startDate = calState.mutationStart ? new Date(calState.mutationStart) : null;
         calState.endDate = calState.mutationEnd ? new Date(calState.mutationEnd) : null;
     } else {
-        // Single Date Input Mode for Forms
         const hiddenInputId = targetModule.replace('form-', 'input-');
         const currentVal = document.getElementById(hiddenInputId)?.value;
         calState.startDate = currentVal ? new Date(currentVal) : new Date(2026, 7, 5);
@@ -431,7 +430,6 @@ function setupCalendarListeners() {
                 document.getElementById('display-mutation-end').innerText = endISO ? formatDate(endISO) : 'Pilih Tanggal';
                 renderMutations();
             } else if (calState.targetModule.startsWith('form-')) {
-                // Apply single date to form hidden input & display text
                 const hiddenInputId = calState.targetModule.replace('form-', 'input-');
                 const displayId = calState.targetModule.replace('form-', 'display-');
 
@@ -496,7 +494,7 @@ function renderInventoryTab() {
                     <h4>${inv.name}</h4>
                     <small>Stok Tersedia: <b>${qty} unit</b> | @ ${formatRupiah(price)}</small>
                 </div>
-                <div>
+                <div style="flex-shrink: 0;">
                     <span class="badge ${statusBadge}">${statusText}</span>
                 </div>
             </div>
@@ -539,7 +537,7 @@ function renderUsageTab() {
                     <small>Tgl Balik: <b>${isDone ? formatDate(u.return_date) : 'Belum Dikembalikan'}</b></small>
                     ${Number(u.income_amount) > 0 ? `<br><small class="text-success">Kas Masuk: ${formatRupiah(u.income_amount)}</small>` : ''}
                 </div>
-                <div style="text-align:right;">
+                <div style="text-align:right; flex-shrink: 0;">
                     <span class="badge ${badgeClass}">${u.status}</span><br>
                     ${actionBtn}
                 </div>
@@ -687,7 +685,7 @@ function setupEventListeners() {
         });
     }
 
-    // FORMS SUBMIT
+    // FORMS SUBMIT WITH AUTOMATIC RESET
     const formSingleDues = document.getElementById('form-single-dues');
     if (formSingleDues) {
         formSingleDues.addEventListener('submit', async (e) => {
@@ -697,7 +695,7 @@ function setupEventListeners() {
             const created_at = document.getElementById('input-dues-date').value;
 
             const { error } = await sb.from('dues_payments').insert([{ house_number, amount, created_at }]);
-            handleFormResponse(error, "Iuran berhasil disimpan!");
+            handleFormResponse(error, "Iuran berhasil disimpan!", e.target);
         });
     }
 
@@ -728,7 +726,7 @@ function setupEventListeners() {
             }
 
             const { error } = await sb.from('dues_payments').insert(payload);
-            handleFormResponse(error, `${payload.length} Data Iuran berhasil diproses!`);
+            handleFormResponse(error, `${payload.length} Data Iuran berhasil diproses!`, e.target);
         });
     }
 
@@ -741,7 +739,7 @@ function setupEventListeners() {
             const created_at = document.getElementById('input-income-date').value;
 
             const { error } = await sb.from('other_incomes').insert([{ title, amount, created_at }]);
-            handleFormResponse(error, "Pemasukan berhasil disimpan!");
+            handleFormResponse(error, "Pemasukan berhasil disimpan!", e.target);
         });
     }
 
@@ -758,7 +756,7 @@ function setupEventListeners() {
             const created_at = document.getElementById('input-expense-date').value;
 
             const { error } = await sb.from('expenses').insert([{ category, title, amount, pic, receipt_url, proof_url, created_at }]);
-            handleFormResponse(error, "Pengeluaran berhasil disimpan!");
+            handleFormResponse(error, "Pengeluaran berhasil disimpan!", e.target);
         });
     }
 
@@ -772,7 +770,7 @@ function setupEventListeners() {
             const status = document.getElementById('inv-status').value;
 
             const { error } = await sb.from('inventories').insert([{ name, quantity, price, status }]);
-            handleFormResponse(error, "Data barang aset berhasil disimpan!");
+            handleFormResponse(error, "Data barang aset berhasil disimpan!", e.target);
         });
     }
 
@@ -813,7 +811,7 @@ function setupEventListeners() {
                 }]);
             }
 
-            handleFormResponse(null, "Transaksi penggunaan berhasil dicatat & stok otomatis berkurang!");
+            handleFormResponse(null, "Transaksi penggunaan berhasil dicatat & stok otomatis berkurang!", e.target);
         });
     }
 
@@ -845,7 +843,7 @@ function setupEventListeners() {
             }
 
             closeModal('modal-return');
-            handleFormResponse(null, "Barang berhasil dikembalikan & stok telah diperbarui!");
+            handleFormResponse(null, "Barang berhasil dikembalikan & stok telah diperbarui!", e.target);
         });
     }
 
@@ -857,7 +855,7 @@ function setupEventListeners() {
             const content = document.getElementById('ann-content').value;
 
             const { error } = await sb.from('announcements').insert([{ title, content }]);
-            handleFormResponse(error, "Pengumuman berhasil diposting!");
+            handleFormResponse(error, "Pengumuman berhasil diposting!", e.target);
         });
     }
 
@@ -869,7 +867,7 @@ function setupEventListeners() {
             const full_name = document.getElementById('res-name').value;
 
             const { error } = await sb.from('residents').insert([{ house_number, full_name }]);
-            handleFormResponse(error, "Data warga berhasil ditambahkan!");
+            handleFormResponse(error, "Data warga berhasil ditambahkan!", e.target);
         });
     }
 
@@ -891,12 +889,16 @@ function setupEventListeners() {
     }
 }
 
-// HANDLE AFTER SUBMIT FORM
-async function handleFormResponse(error, successMsg) {
+// HANDLE AFTER SUBMIT FORM WITH AUTO RESET
+async function handleFormResponse(error, successMsg, formElement = null) {
     if (error) {
         showCustomAlert("Gagal", "Terjadi kesalahan: " + error.message);
     } else {
         showCustomAlert("Sukses", successMsg);
+        if (formElement) {
+            formElement.reset();
+            initTodayDates();
+        }
         await loadAllData();
     }
 }
@@ -958,7 +960,7 @@ function renderManageData() {
                     <h4>${label}</h4>
                     <small>${sub}</small>
                 </div>
-                <div style="display:flex; gap:6px;">
+                <div style="display:flex; gap:6px; flex-shrink: 0;">
                     <button class="btn-sm btn-outline-blue" onclick="window.openEditModal('${table}', '${item.id}')">
                         <i class="fa-solid fa-pen"></i>
                     </button>
@@ -1212,7 +1214,7 @@ if (formEditGen) {
         const { error } = await sb.from(table).update(payload).eq('id', targetId);
         
         closeModal('modal-edit');
-        handleFormResponse(error, "Data berhasil diperbarui!");
+        handleFormResponse(error, "Data berhasil diperbarui!", e.target);
         renderManageData();
     });
 }
