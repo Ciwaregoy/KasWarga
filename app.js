@@ -973,7 +973,7 @@ function renderManageData() {
     container.innerHTML = html;
 }
 
-// OPEN EDIT MODAL
+// OPEN EDIT MODAL FULL FIELDS
 window.openEditModal = function(table, id) {
     let stateKey = table === 'dues_payments' ? 'duesPayments' : table === 'other_incomes' ? 'otherIncomes' : table === 'item_usages' ? 'itemUsages' : table;
     const data = state[stateKey].find(x => x.id == id);
@@ -988,11 +988,124 @@ window.openEditModal = function(table, id) {
     if (!fieldsContainer) return;
     fieldsContainer.innerHTML = '';
 
-    if (table === 'item_usages') {
+    if (table === 'dues_payments') {
+        const houseOptions = state.residents.map(r => 
+            `<option value="${r.house_number}" ${r.house_number === data.house_number ? 'selected' : ''}>Rumah ${r.house_number} (${maskName(r.full_name)})</option>`
+        ).join('');
+
         fieldsContainer.innerHTML = `
             <div class="form-group">
-                <label>Nama Pengguna</label>
-                <input type="text" id="edit-val-user" class="form-control" value="${data.user_name}" required>
+                <label>No Rumah Warga</label>
+                <select id="edit-val-house" class="form-control" required>${houseOptions}</select>
+            </div>
+            <div class="form-group">
+                <label>Nominal (Rp)</label>
+                <input type="number" id="edit-val-amount" class="form-control" value="${data.amount || 0}" required>
+            </div>
+            <div class="form-group">
+                <label>Tanggal Transaksi</label>
+                <input type="date" id="edit-val-date" class="form-control" value="${data.created_at ? data.created_at.split('T')[0] : ''}" required>
+            </div>
+        `;
+    } else if (table === 'other_incomes') {
+        fieldsContainer.innerHTML = `
+            <div class="form-group">
+                <label>Judul / Sumber Pemasukan</label>
+                <input type="text" id="edit-val-title" class="form-control" value="${data.title || ''}" required>
+            </div>
+            <div class="form-group">
+                <label>Nominal (Rp)</label>
+                <input type="number" id="edit-val-amount" class="form-control" value="${data.amount || 0}" required>
+            </div>
+            <div class="form-group">
+                <label>Tanggal Transaksi</label>
+                <input type="date" id="edit-val-date" class="form-control" value="${data.created_at ? data.created_at.split('T')[0] : ''}" required>
+            </div>
+        `;
+    } else if (table === 'expenses') {
+        const categories = ['Kebersihan', 'Keamanan', 'Sosial', 'Infrastruktur', 'Lainnya'];
+        const categoryOptions = categories.map(c => 
+            `<option value="${c}" ${c === data.category ? 'selected' : ''}>${c}</option>`
+        ).join('');
+
+        fieldsContainer.innerHTML = `
+            <div class="form-group">
+                <label>Kategori</label>
+                <select id="edit-val-category" class="form-control" required>${categoryOptions}</select>
+            </div>
+            <div class="form-group">
+                <label>Judul Pengeluaran</label>
+                <input type="text" id="edit-val-title" class="form-control" value="${data.title || ''}" required>
+            </div>
+            <div class="form-group">
+                <label>Nominal (Rp)</label>
+                <input type="number" id="edit-val-amount" class="form-control" value="${data.amount || 0}" required>
+            </div>
+            <div class="form-group">
+                <label>PIC / Penanggung Jawab</label>
+                <input type="text" id="edit-val-pic" class="form-control" value="${data.pic || ''}" required>
+            </div>
+            <div class="form-group">
+                <label>Link Nota (URL)</label>
+                <input type="url" id="edit-val-receipt" class="form-control" value="${data.receipt_url || ''}">
+            </div>
+            <div class="form-group">
+                <label>Link Bukti Barang (URL)</label>
+                <input type="url" id="edit-val-proof" class="form-control" value="${data.proof_url || ''}">
+            </div>
+            <div class="form-group">
+                <label>Tanggal Transaksi</label>
+                <input type="date" id="edit-val-date" class="form-control" value="${data.created_at ? data.created_at.split('T')[0] : ''}" required>
+            </div>
+        `;
+    } else if (table === 'inventories') {
+        const statuses = ['Tersedia', 'Dipinjam', 'Disewa', 'Rusak'];
+        const statusOptions = statuses.map(s => 
+            `<option value="${s}" ${s === data.status ? 'selected' : ''}>${s}</option>`
+        ).join('');
+
+        fieldsContainer.innerHTML = `
+            <div class="form-group">
+                <label>Nama Barang</label>
+                <input type="text" id="edit-val-name" class="form-control" value="${data.name || ''}" required>
+            </div>
+            <div class="form-group">
+                <label>Jumlah Unit Stok</label>
+                <input type="number" id="edit-val-qty" class="form-control" value="${data.quantity || 0}" required min="0">
+            </div>
+            <div class="form-group">
+                <label>Harga Beli Per Unit (Rp)</label>
+                <input type="number" id="edit-val-price" class="form-control" value="${data.price || 0}" required>
+            </div>
+            <div class="form-group">
+                <label>Status Ketersediaan</label>
+                <select id="edit-val-status" class="form-control" required>${statusOptions}</select>
+            </div>
+        `;
+    } else if (table === 'item_usages') {
+        const invOptions = state.inventories.map(i => 
+            `<option value="${i.id}" ${i.id === data.inventory_id ? 'selected' : ''}>${i.name}</option>`
+        ).join('');
+
+        fieldsContainer.innerHTML = `
+            <div class="form-group">
+                <label>Nama Pengguna / Peminjam</label>
+                <input type="text" id="edit-val-user" class="form-control" value="${data.user_name || ''}" required>
+            </div>
+            <div class="form-group">
+                <label>Pilih Barang</label>
+                <select id="edit-val-inv-id" class="form-control" required>${invOptions}</select>
+            </div>
+            <div class="form-group">
+                <label>Jumlah Dipinjam/Disewa</label>
+                <input type="number" id="edit-val-qty" class="form-control" value="${data.quantity || 1}" min="1" required>
+            </div>
+            <div class="form-group">
+                <label>Jenis Penggunaan</label>
+                <select id="edit-val-use-type" class="form-control" required>
+                    <option value="Disewa" ${data.use_type === 'Disewa' ? 'selected' : ''}>Disewa</option>
+                    <option value="Dipinjam" ${data.use_type === 'Dipinjam' ? 'selected' : ''}>Dipinjam</option>
+                </select>
             </div>
             <div class="form-group">
                 <label>Status Transaksi</label>
@@ -1001,60 +1114,35 @@ window.openEditModal = function(table, id) {
                     <option value="Selesai" ${data.status === 'Selesai' ? 'selected' : ''}>Selesai (Sudah Dikembalikan)</option>
                 </select>
             </div>
-        `;
-    } else if (table === 'dues_payments' || table === 'other_incomes') {
-        fieldsContainer.innerHTML = `
             <div class="form-group">
-                <label>Nominal (Rp)</label>
-                <input type="number" id="edit-val-amount" class="form-control" value="${data.amount}" required>
-            </div>
-        `;
-    } else if (table === 'expenses') {
-        fieldsContainer.innerHTML = `
-            <div class="form-group">
-                <label>Judul Pengeluaran</label>
-                <input type="text" id="edit-val-title" class="form-control" value="${data.title}" required>
+                <label>Tanggal Pinjam/Sewa</label>
+                <input type="date" id="edit-val-use-date" class="form-control" value="${data.use_date ? data.use_date.split('T')[0] : ''}" required>
             </div>
             <div class="form-group">
-                <label>Nominal (Rp)</label>
-                <input type="number" id="edit-val-amount" class="form-control" value="${data.amount}" required>
-            </div>
-        `;
-    } else if (table === 'inventories') {
-        fieldsContainer.innerHTML = `
-            <div class="form-group">
-                <label>Nama Barang</label>
-                <input type="text" id="edit-val-name" class="form-control" value="${data.name}" required>
-            </div>
-            <div class="form-group">
-                <label>Jumlah Unit Stok</label>
-                <input type="number" id="edit-val-qty" class="form-control" value="${data.quantity}" required min="0">
-            </div>
-            <div class="form-group">
-                <label>Harga Beli Per Unit (Rp)</label>
-                <input type="number" id="edit-val-price" class="form-control" value="${data.price}" required>
+                <label>Kas Diterima (Rp)</label>
+                <input type="number" id="edit-val-income" class="form-control" value="${data.income_amount || 0}" required>
             </div>
         `;
     } else if (table === 'announcements') {
         fieldsContainer.innerHTML = `
             <div class="form-group">
                 <label>Judul Pengumuman</label>
-                <input type="text" id="edit-val-title" class="form-control" value="${data.title}" required>
+                <input type="text" id="edit-val-title" class="form-control" value="${data.title || ''}" required>
             </div>
             <div class="form-group">
                 <label>Isi Pengumuman</label>
-                <textarea id="edit-val-content" class="form-control" rows="3" required>${data.content}</textarea>
+                <textarea id="edit-val-content" class="form-control" rows="4" required>${data.content || ''}</textarea>
             </div>
         `;
     } else if (table === 'residents') {
         fieldsContainer.innerHTML = `
             <div class="form-group">
                 <label>No Rumah</label>
-                <input type="text" id="edit-val-house" class="form-control" value="${data.house_number}" required>
+                <input type="text" id="edit-val-house" class="form-control" value="${data.house_number || ''}" required>
             </div>
             <div class="form-group">
                 <label>Nama Lengkap</label>
-                <input type="text" id="edit-val-name" class="form-control" value="${data.full_name}" required>
+                <input type="text" id="edit-val-name" class="form-control" value="${data.full_name || ''}" required>
             </div>
         `;
     }
@@ -1062,7 +1150,7 @@ window.openEditModal = function(table, id) {
     openModal('modal-edit');
 };
 
-// SUBMIT FORM EDIT GENERIC
+// SUBMIT FORM EDIT GENERIC WITH FULL FIELDS
 const formEditGen = document.getElementById('form-edit-generic');
 if (formEditGen) {
     formEditGen.addEventListener('submit', async (e) => {
@@ -1073,34 +1161,52 @@ if (formEditGen) {
         
         let payload = {};
 
-        if (table === 'item_usages') {
-            const oldUsage = state.itemUsages.find(u => u.id == targetId);
-            const newStatus = document.getElementById('edit-val-usage-status').value;
-            payload.user_name = document.getElementById('edit-val-user').value;
-            payload.status = newStatus;
-
-            if (oldUsage && oldUsage.status === 'Aktif' && newStatus === 'Selesai') {
-                payload.return_date = new Date().toISOString().split('T')[0];
-                const inv = state.inventories.find(i => i.id === oldUsage.inventory_id);
-                if (inv) {
-                    await sb.from('inventories').update({ quantity: inv.quantity + oldUsage.quantity }).eq('id', inv.id);
-                }
-            }
+        if (table === 'dues_payments') {
+            payload.house_number = document.getElementById('edit-val-house').value;
+            payload.amount = Number(document.getElementById('edit-val-amount').value);
+            payload.created_at = document.getElementById('edit-val-date').value;
+        } else if (table === 'other_incomes') {
+            payload.title = document.getElementById('edit-val-title').value;
+            payload.amount = Number(document.getElementById('edit-val-amount').value);
+            payload.created_at = document.getElementById('edit-val-date').value;
+        } else if (table === 'expenses') {
+            payload.category = document.getElementById('edit-val-category').value;
+            payload.title = document.getElementById('edit-val-title').value;
+            payload.amount = Number(document.getElementById('edit-val-amount').value);
+            payload.pic = document.getElementById('edit-val-pic').value;
+            payload.receipt_url = document.getElementById('edit-val-receipt').value;
+            payload.proof_url = document.getElementById('edit-val-proof').value;
+            payload.created_at = document.getElementById('edit-val-date').value;
         } else if (table === 'inventories') {
             payload.name = document.getElementById('edit-val-name').value;
             payload.quantity = Number(document.getElementById('edit-val-qty').value);
             payload.price = Number(document.getElementById('edit-val-price').value);
-        } else if (table === 'residents') {
-            payload.house_number = document.getElementById('edit-val-house').value;
-            payload.full_name = document.getElementById('edit-val-name').value;
+            payload.status = document.getElementById('edit-val-status').value;
+        } else if (table === 'item_usages') {
+            const oldUsage = state.itemUsages.find(u => u.id == targetId);
+            const newStatus = document.getElementById('edit-val-usage-status').value;
+
+            payload.user_name = document.getElementById('edit-val-user').value;
+            payload.inventory_id = Number(document.getElementById('edit-val-inv-id').value);
+            payload.quantity = Number(document.getElementById('edit-val-qty').value);
+            payload.use_type = document.getElementById('edit-val-use-type').value;
+            payload.status = newStatus;
+            payload.use_date = document.getElementById('edit-val-use-date').value;
+            payload.income_amount = Number(document.getElementById('edit-val-income').value);
+
+            if (oldUsage && oldUsage.status === 'Aktif' && newStatus === 'Selesai') {
+                payload.return_date = new Date().toISOString().split('T')[0];
+                const inv = state.inventories.find(i => i.id === payload.inventory_id);
+                if (inv) {
+                    await sb.from('inventories').update({ quantity: inv.quantity + payload.quantity }).eq('id', inv.id);
+                }
+            }
         } else if (table === 'announcements') {
             payload.title = document.getElementById('edit-val-title').value;
             payload.content = document.getElementById('edit-val-content').value;
-        } else if (table === 'expenses') {
-            payload.title = document.getElementById('edit-val-title').value;
-            payload.amount = Number(document.getElementById('edit-val-amount').value);
-        } else if (table === 'dues_payments' || table === 'other_incomes') {
-            payload.amount = Number(document.getElementById('edit-val-amount').value);
+        } else if (table === 'residents') {
+            payload.house_number = document.getElementById('edit-val-house').value.toUpperCase();
+            payload.full_name = document.getElementById('edit-val-name').value;
         }
 
         const { error } = await sb.from(table).update(payload).eq('id', targetId);
